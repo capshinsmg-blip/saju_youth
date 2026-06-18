@@ -7,6 +7,6 @@
    값이 비어있거나 YOUR_... 이면 자동으로 localStorage 임시저장(폴백)으로 동작합니다.
 ===================================================================== */
 window.SUPABASE_CONFIG = {
-  url: "YOUR_SUPABASE_URL",
-  anonKey: "YOUR_SUPABASE_ANON_KEY"
+  url: "https://nlmebvzocccbeqdghtcq.supabase.co",
+  anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5sbWVidnpvY2NjYmVxZGdodGNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1ODI3NTksImV4cCI6MjA5NzE1ODc1OX0.DfmlVNMlM0JTxFbz_7wE96YzCrPcV-7ZJoHvYxYImfY"
 };
