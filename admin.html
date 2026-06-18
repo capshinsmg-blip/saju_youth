@@ -66,9 +66,10 @@
 <div id="login">
   <h1>🔐 관리자 로그인</h1>
   <p>신청자의 세부 만세력 풀이를 조회합니다.</p>
+  <input id="email" type="email" placeholder="관리자 이메일" style="display:none" onkeydown="if(event.key==='Enter')doLogin()" />
   <input id="pw" type="password" placeholder="비밀번호" onkeydown="if(event.key==='Enter')doLogin()" />
   <button onclick="doLogin()">로그인</button>
-  <div class="warn">⚠️ 검토용 시제품입니다. 현재 로그인은 프런트엔드 임시 방식(비밀번호: <b>saju2026</b>)이라 보안되지 않습니다. 실제 운영 전 백엔드 인증으로 교체 필요.</div>
+  <div class="warn" id="loginNote"></div>
 </div>
 
 <div id="dash">
@@ -87,8 +88,11 @@
 
 <script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1.7.4/lunar.js"></script>
 <script src="saju.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script src="db.js"></script>
 <script>
-const ADMIN_PW='saju2026'; // TODO: 실제 운영 시 백엔드 인증으로 교체
+const ADMIN_PW='saju2026'; // 폴백(미설정) 모드 임시 비번
 const $=id=>document.getElementById(id);
 
 /* 샘플 신청자 (실제로는 폼/DB에서 불러옴) */
@@ -98,14 +102,32 @@ const SAMPLE=[
   {id:'a3', name:'박지우', sex:'female', calendar:'lunar', y:2020, mo:4, d:5, leap:true, hour:9, phone:'010-9876-5432', concern:'진로', createdAt:'2026-06-18 11:05'},
   {id:'a4', name:'최민준', sex:'male', calendar:'solar', y:1985, mo:12, d:25, leap:false, hour:null, phone:'010-5555-7777', concern:'대인관계', createdAt:'2026-06-18 13:30'},
 ];
-function applicants(){ let extra=[]; try{ extra=JSON.parse(localStorage.getItem('saju_applicants')||'[]'); }catch(e){} return [...extra,...SAMPLE]; }
+/* 로그인 UI: Supabase 설정 있으면 이메일+비번, 없으면 임시 비번 */
+(function loginUI(){
+  if(window.DB && DB.enabled){
+    $('email').style.display='block';
+    $('loginNote').innerHTML='☁️ Supabase 연동됨 — 등록된 관리자 이메일/비밀번호로 로그인하세요.';
+  } else {
+    $('loginNote').innerHTML='⚠️ 검토용 모드(백엔드 미설정). 임시 비밀번호: <b>saju2026</b> · 신청자는 샘플+이 브라우저 임시저장만 표시됩니다. 실제 운영은 docs/04 가이드 참고.';
+  }
+})();
 
-function doLogin(){ if($('pw').value===ADMIN_PW){ $('login').style.display='none'; $('dash').style.display='block'; renderList(); } else alert('비밀번호가 틀렸어요. (검토용: saju2026)'); }
-function logout(){ $('dash').style.display='none'; $('login').style.display='flex'; $('pw').value=''; }
+async function doLogin(){
+  if(window.DB && DB.enabled){
+    const { error } = await DB.signIn($('email').value.trim(), $('pw').value);
+    if(error){ alert('로그인 실패: '+(error.message||'이메일/비밀번호 확인')); return; }
+  } else {
+    if($('pw').value!==ADMIN_PW){ alert('비밀번호가 틀렸어요. (검토용: saju2026)'); return; }
+  }
+  $('login').style.display='none'; $('dash').style.display='block'; renderList();
+}
+async function logout(){ if(window.DB) await DB.signOut(); $('dash').style.display='none'; $('login').style.display='flex'; $('pw').value=''; }
 
 let SEL=null;
-function renderList(){
-  const list=applicants(); $('cnt').textContent='· 총 '+list.length+'명';
+async function renderList(){
+  let list = await DB.list();
+  if(!DB.enabled) list = list.concat(SAMPLE);   // 폴백: 임시저장 + 샘플
+  $('cnt').textContent='· 총 '+list.length+'명 · '+(DB.enabled?'클라우드':'임시');
   const c=$('appliList'); c.innerHTML='';
   list.forEach(a=>{ const el=document.createElement('div'); el.className='appli'+(SEL===a.id?' sel':'');
     const cal=a.calendar==='lunar'?'음력'+(a.leap?'(윤)':''):'양력';

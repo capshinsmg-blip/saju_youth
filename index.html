@@ -279,10 +279,43 @@
     </div>
   </section>
 
+  <!-- 5. 신청(예약) 폼 -->
+  <section class="screen" id="s-apply">
+    <button class="back" onclick="go('result')">← 결과로</button>
+    <div class="ftitle">오픈 기념 50% 예약 신청</div>
+    <div class="fsub">신청하면 상세 사주 분석지 + 50% 쿠폰을 보내드려요</div>
+
+    <div class="field"><label class="l">이름</label><input class="inp" id="a-name" maxlength="10" placeholder="OO" /></div>
+    <div class="field"><label class="l">연락처</label><input class="inp" id="a-phone" type="tel" inputmode="numeric" placeholder="010-0000-0000" /></div>
+    <div class="field"><label class="l">요즘 가장 큰 고민</label>
+      <select id="a-concern"><option>연애</option><option>진로</option><option>금전</option><option>대인관계</option><option>건강</option></select></div>
+
+    <label class="leap"><input type="checkbox" id="a-c1" /> <span><b style="color:#e0625c">(필수)</b> 개인정보 수집·이용 동의 (생년월일시·연락처를 분석·결과 안내 목적으로 수집)</span></label>
+    <label class="leap" style="margin-top:-2px;"><input type="checkbox" id="a-c2" /> <span>(선택) 광고성 정보(문자) 수신 동의</span></label>
+
+    <div class="err" id="a-err"></div>
+    <button class="btn btn-gold" onclick="submitApply()">신청 완료하기</button>
+    <p class="hint" id="a-mode"></p>
+  </section>
+
+  <!-- 6. 완료 -->
+  <section class="screen" id="s-done">
+    <div class="hero" style="text-align:center;">
+      <div style="font-size:56px;">🎉</div>
+      <h1 style="font-size:27px;">신청 완료!</h1>
+      <p>상세 사주 분석지와 50% 쿠폰을<br>입력하신 연락처로 보내드릴게요.</p>
+    </div>
+    <button class="btn btn-ig" id="done-ig">인스타도 팔로우하기</button>
+    <button class="btn btn-ghost" onclick="go('land')">처음으로</button>
+  </section>
+
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1.7.4/lunar.js"></script>
 <script src="saju.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script src="db.js"></script>
 <script>
 /* ===== 설정 (실제 운영값으로 교체) ===== */
 const CONFIG = {
@@ -294,7 +327,7 @@ const CONFIG = {
 
 let LAST=null; // 마지막 진단 결과 + 이름
 const $=id=>document.getElementById(id);
-const screens={land:'s-land',form:'s-form',result:'s-result',explain:'s-explain'};
+const screens={land:'s-land',form:'s-form',result:'s-result',explain:'s-explain',apply:'s-apply',done:'s-done'};
 function go(n){ Object.values(screens).forEach(id=>$(id).classList.remove('active')); $(screens[n]).classList.add('active'); window.scrollTo(0,0); }
 function onCal(){ const lunar=document.querySelector('input[name=cal]:checked').value==='lunar'; $('leapWrap').style.display=lunar?'flex':'none'; if(!lunar)$('f-leap').checked=false; }
 
@@ -406,8 +439,30 @@ function renderExplain(){
     이 색·원석을 몸에 지니면(예: 오행 팔찌) 부족한 기운을 보완하는 데 도움돼요.`;
 }
 
-function reserve(){ if(CONFIG.reserveUrl&&CONFIG.reserveUrl!=='#') window.open(CONFIG.reserveUrl,'_blank');
-  else alert('예약 링크는 곧 오픈됩니다! 인스타 '+CONFIG.instagram+' DM으로 문의해주세요.'); }
+function reserve(){
+  if(!LAST){ go('form'); return; }
+  $('a-name').value = LAST.name||'';
+  $('a-mode').textContent = (window.DB && DB.mode==='supabase')
+    ? '신청 내용은 안전하게 저장됩니다.'
+    : '※ 현재 임시저장(이 기기) 모드 — Supabase 연동 시 클라우드 저장됩니다.';
+  go('apply');
+}
+async function submitApply(){
+  const err=$('a-err'); err.textContent='';
+  const name=$('a-name').value.trim(), phone=$('a-phone').value.trim();
+  if(!name){ err.textContent='이름을 입력해주세요.'; return; }
+  if(!/^[0-9][0-9\- ]{8,}$/.test(phone)){ err.textContent='연락처를 정확히 입력해주세요.'; return; }
+  if(!$('a-c1').checked){ err.textContent='개인정보 수집·이용 동의가 필요해요.'; return; }
+  const s=LAST.s;
+  const app={ name, phone, sex:s.input.sex, calendar:s.input.calendar,
+    y:s.input.y, mo:s.input.mo, d:s.input.d, leap:!!s.input.leap, hour:s.input.hour,
+    concern:$('a-concern').value, consent_ad:$('a-c2').checked,
+    money:s.money, love:s.love, createdAt:new Date().toISOString().slice(0,16).replace('T',' ') };
+  const btn=event&&event.target; if(btn){ btn.disabled=true; btn.textContent='저장 중…'; }
+  try{ await DB.submit(app); go('done'); }
+  catch(e){ err.textContent='저장에 실패했어요. 잠시 후 다시 시도해주세요.'; }
+  finally{ if(btn){ btn.disabled=false; btn.textContent='신청 완료하기'; } }
+}
 
 function shareResult(){ const txt='내 사주 연애운·금전운 몇 %일까? 무료 3초 진단 ✨';
   if(navigator.share) navigator.share({title:CONFIG.brandName,text:txt,url:location.href}).catch(()=>{});
@@ -422,6 +477,7 @@ function shareResult(){ const txt='내 사주 연애운·금전운 몇 %일까? 
     requestAnimationFrame(loop); })(); })();
 
 $('brandTop').textContent=CONFIG.brandName;
+$('done-ig').onclick=()=>window.open(CONFIG.instagramUrl,'_blank');
 </script>
 </body>
 </html>
