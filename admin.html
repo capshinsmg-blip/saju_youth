@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>관리자 · 신청자 만세력 풀이</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  :root{ --bg:#0e0c14; --panel:#16131f; --panel2:#1c1830; --ink:#f1eee8; --dim:#9c97a8; --gold:#e6c98a; --gold2:#c8a96a; --line:rgba(230,201,138,.16); --m:#4faf7d;--h:#e0625c;--t:#d8b13f;--g:#dfe3ec;--s:#5b8fd6; }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;}
+  a{color:var(--gold2);}
+  /* 로그인 */
+  #login{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;}
+  #login h1{font-family:'Noto Serif KR',serif;font-size:22px;}
+  #login p{color:var(--dim);font-size:13px;text-align:center;line-height:1.6;}
+  #login input{width:100%;max-width:320px;background:var(--panel);border:1px solid var(--line);color:var(--ink);font-size:16px;border-radius:12px;padding:14px;}
+  #login button{width:100%;max-width:320px;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#241c0a;font-weight:700;border:none;border-radius:12px;padding:15px;font-size:16px;cursor:pointer;}
+  .warn{max-width:320px;font-size:11px;color:#e0a05c;border:1px dashed #e0a05c55;border-radius:10px;padding:10px;text-align:center;}
+  /* 대시보드 */
+  #dash{display:none;}
+  .top{position:sticky;top:0;background:rgba(14,12,20,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:14px 18px;display:flex;justify-content:space-between;align-items:center;z-index:5;}
+  .top .ttl{font-family:'Noto Serif KR',serif;font-size:16px;}
+  .top .ttl small{color:var(--dim);font-weight:400;font-size:12px;margin-left:8px;}
+  .top button{background:none;border:1px solid var(--line);color:var(--dim);border-radius:8px;padding:7px 12px;font-size:13px;cursor:pointer;}
+  .layout{display:flex;gap:18px;padding:18px;max-width:1100px;margin:0 auto;align-items:flex-start;}
+  .list{flex:0 0 300px;}
+  .detail{flex:1;min-width:0;}
+  @media(max-width:760px){.layout{flex-direction:column;}.list{flex:none;width:100%;}}
+  .lhdr{font-size:12px;color:var(--gold2);letter-spacing:.05em;margin-bottom:10px;}
+  .appli{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:13px 14px;margin-bottom:9px;cursor:pointer;transition:.15s;}
+  .appli:hover{background:var(--panel2);}
+  .appli.sel{border-color:var(--gold2);background:var(--panel2);}
+  .appli .n{font-weight:700;font-size:15px;}
+  .appli .n .sx{font-size:11px;color:var(--dim);font-weight:400;margin-left:6px;}
+  .appli .meta{font-size:12px;color:var(--dim);margin-top:4px;}
+  .appli .cc{display:inline-block;font-size:11px;background:rgba(230,201,138,.12);color:var(--gold);border-radius:6px;padding:1px 7px;margin-top:7px;}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:14px;}
+  .card h3{font-size:12px;color:var(--gold2);letter-spacing:.05em;margin-bottom:13px;}
+  .kv{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:14px;}
+  .kv div{min-width:120px;} .kv b{color:var(--dim);font-weight:400;margin-right:6px;}
+  .pillars{display:flex;gap:8px;}
+  .pillar{flex:1;text-align:center;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 4px;}
+  .pillar .lab{font-size:10px;color:var(--dim);margin-bottom:5px;}
+  .pillar .gz{font-family:'Noto Serif KR',serif;font-weight:700;font-size:19px;}
+  .pillar .gz small{display:block;font-size:10px;color:var(--dim);font-weight:400;}
+  table{width:100%;border-collapse:collapse;font-size:14px;}
+  td{padding:7px 0;border-bottom:1px solid rgba(255,255,255,.05);}
+  td:last-child{text-align:right;color:var(--dim);}
+  .oh-pill{display:inline-block;width:20px;height:20px;line-height:20px;text-align:center;border-radius:50%;font-family:'Noto Serif KR';font-size:11px;font-weight:700;color:#111;margin-right:8px;}
+  .score{display:flex;gap:14px;}
+  .score .sc{flex:1;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px;text-align:center;}
+  .score .sc .v{font-family:'Noto Serif KR';font-weight:700;font-size:26px;}
+  .score .sc .k{font-size:12px;color:var(--dim);margin-top:3px;}
+  .interp{font-size:14px;line-height:1.75;color:var(--ink);} .interp b{color:var(--gold);}
+  .consult label{display:block;font-size:12px;color:var(--gold2);margin:12px 0 6px;}
+  .consult textarea{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:11px;font-family:inherit;font-size:14px;line-height:1.6;resize:vertical;min-height:60px;}
+  .consult .save{margin-top:12px;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#241c0a;border:none;font-weight:700;border-radius:10px;padding:11px 18px;cursor:pointer;}
+  .empty{color:var(--dim);text-align:center;padding:60px 20px;font-size:14px;line-height:1.7;}
+  .mocknote{font-size:11px;color:#e0a05c;background:#e0a05c11;border:1px dashed #e0a05c44;border-radius:10px;padding:10px 12px;margin-bottom:14px;line-height:1.6;}
+</style>
+</head>
+<body>
+
+<div id="login">
+  <h1>🔐 관리자 로그인</h1>
+  <p>신청자의 세부 만세력 풀이를 조회합니다.</p>
+  <input id="pw" type="password" placeholder="비밀번호" onkeydown="if(event.key==='Enter')doLogin()" />
+  <button onclick="doLogin()">로그인</button>
+  <div class="warn">⚠️ 검토용 시제품입니다. 현재 로그인은 프런트엔드 임시 방식(비밀번호: <b>saju2026</b>)이라 보안되지 않습니다. 실제 운영 전 백엔드 인증으로 교체 필요.</div>
+</div>
+
+<div id="dash">
+  <div class="top">
+    <div class="ttl">신청자 만세력 풀이 <small id="cnt"></small></div>
+    <button onclick="logout()">로그아웃</button>
+  </div>
+  <div class="layout">
+    <div class="list">
+      <div class="lhdr">신청자 목록</div>
+      <div id="appliList"></div>
+    </div>
+    <div class="detail" id="detail"><div class="empty">왼쪽에서 신청자를 선택하면<br>세부 만세력 풀이가 표시됩니다.</div></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1.7.4/lunar.js"></script>
+<script src="saju.js"></script>
+<script>
+const ADMIN_PW='saju2026'; // TODO: 실제 운영 시 백엔드 인증으로 교체
+const $=id=>document.getElementById(id);
+
+/* 샘플 신청자 (실제로는 폼/DB에서 불러옴) */
+const SAMPLE=[
+  {id:'a1', name:'김서연', sex:'female', calendar:'solar', y:1998, mo:1, d:1, leap:false, hour:11, phone:'010-1234-5678', concern:'연애', createdAt:'2026-06-17 19:42'},
+  {id:'a2', name:'이도현', sex:'male', calendar:'solar', y:1990, mo:6, d:15, leap:false, hour:3, phone:'010-2222-3333', concern:'금전', createdAt:'2026-06-17 20:10'},
+  {id:'a3', name:'박지우', sex:'female', calendar:'lunar', y:2020, mo:4, d:5, leap:true, hour:9, phone:'010-9876-5432', concern:'진로', createdAt:'2026-06-18 11:05'},
+  {id:'a4', name:'최민준', sex:'male', calendar:'solar', y:1985, mo:12, d:25, leap:false, hour:null, phone:'010-5555-7777', concern:'대인관계', createdAt:'2026-06-18 13:30'},
+];
+function applicants(){ let extra=[]; try{ extra=JSON.parse(localStorage.getItem('saju_applicants')||'[]'); }catch(e){} return [...extra,...SAMPLE]; }
+
+function doLogin(){ if($('pw').value===ADMIN_PW){ $('login').style.display='none'; $('dash').style.display='block'; renderList(); } else alert('비밀번호가 틀렸어요. (검토용: saju2026)'); }
+function logout(){ $('dash').style.display='none'; $('login').style.display='flex'; $('pw').value=''; }
+
+let SEL=null;
+function renderList(){
+  const list=applicants(); $('cnt').textContent='· 총 '+list.length+'명';
+  const c=$('appliList'); c.innerHTML='';
+  list.forEach(a=>{ const el=document.createElement('div'); el.className='appli'+(SEL===a.id?' sel':'');
+    const cal=a.calendar==='lunar'?'음력'+(a.leap?'(윤)':''):'양력';
+    el.innerHTML=`<div class="n">${a.name||'(무명)'}<span class="sx">${a.sex==='female'?'여':'남'}</span></div>
+      <div class="meta">${cal} ${a.y}.${a.mo}.${a.d} · ${a.phone||'-'}</div>
+      <span class="cc">고민: ${a.concern||'-'}</span>`;
+    el.onclick=()=>{ SEL=a.id; renderList(); renderDetail(a); };
+    c.appendChild(el); });
+}
+
+function renderDetail(a){
+  const C=SAJU, s=C.compute({calendar:a.calendar,y:a.y,mo:a.mo,d:a.d,leap:a.leap,hour:a.hour,sex:a.sex});
+  const d=$('detail');
+  if(s.error){ d.innerHTML='<div class="empty">사주 계산에 실패했어요 (날짜 확인 필요).</div>'; return; }
+  const cal=a.calendar==='lunar'?('음력'+(a.leap?' 윤달':'')):'양력';
+  const hourTxt=a.hour===null?'모름(시주 제외)':a.hour+'시경';
+  const m=C.describe.money(s), l=C.describe.love(s), r=C.REC[s.lack];
+  const memo=loadMemo(a.id);
+
+  const pillarCells=s.pillars.map(p=>{ if(!p.gan) return `<div class="pillar"><div class="lab">${p.lab}주</div><div class="gz" style="color:var(--dim)">··<small>모름</small></div></div>`;
+    const ge=C.GAN_EL[p.gan],ze=C.ZHI_EL[p.zhi];
+    return `<div class="pillar"><div class="lab">${p.lab}주</div><div class="gz">
+      <span style="color:${C.EL_COLOR[ge]}">${p.gan}</span><span style="color:${C.EL_COLOR[ze]}">${p.zhi}</span>
+      <small>${C.GAN_KO[p.gan]}${C.ZHI_KO[p.zhi]}</small></div></div>`; }).join('');
+  const ohRows=['목','화','토','금','수'].map(e=>`<tr><td><span class="oh-pill" style="background:${C.EL_COLOR[e]}">${C.EL_HAN[e]}</span>${e}</td><td>${s.oh[e]}개</td></tr>`).join('');
+  const tgRows=Object.keys(s.tg).map(k=>`<tr><td>${k} <span style="color:var(--dim);font-size:12px">${C.TENGOD_MEAN[k]}</span></td><td>${s.tg[k]}개</td></tr>`).join('');
+
+  d.innerHTML=`
+  <div class="mocknote">📌 검토용 템플릿입니다. 사주 8자·오행·십신·운 점수는 만세력 엔진으로 자동 계산되고, 아래 [상담 작성란]은 상담사가 직접 채우는 영역입니다.</div>
+
+  <div class="card"><h3>👤 신청자 정보</h3>
+    <div class="kv">
+      <div><b>이름</b>${a.name||'-'}</div><div><b>성별</b>${a.sex==='female'?'여성':'남성'}</div>
+      <div><b>연락처</b>${a.phone||'-'}</div><div><b>고민</b>${a.concern||'-'}</div>
+      <div><b>생년월일</b>${cal} ${a.y}.${a.mo}.${a.d}</div><div><b>태어난 시</b>${hourTxt}</div>
+      <div><b>양력환산</b>${s.solarStr||'-'}</div><div><b>신청일</b>${a.createdAt||'-'}</div>
+    </div></div>
+
+  <div class="card"><h3>🀄 사주 8글자 (四柱八字)</h3>
+    <div class="pillars">${pillarCells}</div></div>
+
+  <div class="card"><h3>🌳 오행 분포</h3><table>${ohRows}</table>
+    <p class="interp" style="margin-top:12px">${C.describe.balance(s)}</p></div>
+
+  <div class="card"><h3>🔟 십신(十神) 분포</h3><table>${tgRows}</table></div>
+
+  <div class="card"><h3>🎯 운(運) 점수 & 해석</h3>
+    <div class="score">
+      <div class="sc"><div class="v" style="color:var(--t)">${s.money}%</div><div class="k">금전운 · ${C.grade(s.money)}</div></div>
+      <div class="sc"><div class="v" style="color:var(--h)">${s.love}%</div><div class="k">연애운 · ${C.grade(s.love)}</div></div>
+    </div>
+    <p class="interp" style="margin-top:14px"><b>금전</b> — ${m.body}</p>
+    <p class="interp" style="margin-top:8px"><b>연애</b> — ${l.body}</p></div>
+
+  <div class="card"><h3>📿 일간 분석 & 개운 추천</h3>
+    <p class="interp">${C.describe.ilgan(s)}</p>
+    <p class="interp" style="margin-top:10px">부족 오행 <b>${C.EL_HAN[s.lack]}(${s.lack})</b> → 색 <b>${r.color}</b> · 원석 <b>${r.stone}</b> · 방위 <b>${r.dir}</b></p></div>
+
+  <div class="card consult"><h3>📝 상담 작성란 (상담사 입력 — 공방/상담에서 채움)</h3>
+    <label>10년 대운(大運) 흐름</label><textarea id="c-daeun" placeholder="예: 28세부터 재성 대운 진입, 사회적 확장기…">${memo.daeun||''}</textarea>
+    <label>조심해야 할 시기</label><textarea id="c-caution" placeholder="예: 2027년 관재구설 주의…">${memo.caution||''}</textarea>
+    <label>개운법 · 택일</label><textarea id="c-luck" placeholder="예: 남쪽 방위 활용, 붉은색 소품…">${memo.luck||''}</textarea>
+    <label>상담 메모</label><textarea id="c-memo" placeholder="상담 중 특이사항·후속 액션">${memo.memo||''}</textarea>
+    <button class="save" onclick="saveMemo('${a.id}')">상담 내용 저장</button>
+  </div>`;
+}
+
+function loadMemo(id){ try{ return JSON.parse(localStorage.getItem('saju_memo_'+id)||'{}'); }catch(e){ return {}; } }
+function saveMemo(id){ const m={daeun:$('c-daeun').value,caution:$('c-caution').value,luck:$('c-luck').value,memo:$('c-memo').value};
+  localStorage.setItem('saju_memo_'+id,JSON.stringify(m)); alert('저장됐어요. (현재는 이 브라우저에만 저장 — 실제 운영 시 서버 저장으로 교체)'); }
+</script>
+</body>
+</html>
