@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "saju",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["preview_server.js"],
+      "port": 8123
+    }
+  ]
+}
