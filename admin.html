@@ -58,6 +58,24 @@
   .consult textarea{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:11px;font-family:inherit;font-size:14px;line-height:1.6;resize:vertical;min-height:60px;}
   .consult .save{margin-top:12px;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#241c0a;border:none;font-weight:700;border-radius:10px;padding:11px 18px;cursor:pointer;}
   .empty{color:var(--dim);text-align:center;padding:60px 20px;font-size:14px;line-height:1.7;}
+  .pers-card{border-color:rgba(230,201,138,.4);background:rgba(230,201,138,.05);}
+  .pers-head{font-family:'Noto Serif KR',serif;font-weight:700;font-size:19px;color:var(--gold);margin-bottom:9px;}
+  .pers-essence{font-size:14px;line-height:1.8;margin-bottom:14px;}
+  .pblock{margin-bottom:12px;} .pblock .pt{font-size:12px;color:var(--gold2);margin-bottom:4px;}
+  .pblock .pv{font-size:13.5px;line-height:1.7;} .pblock .pv b{color:var(--gold);}
+  .pers-sum{margin-top:6px;font-size:13px;line-height:1.7;color:var(--dim);border-top:1px solid var(--line);padding-top:12px;}
+  .plist .prow{display:flex;gap:11px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:11px;margin-bottom:8px;background:var(--panel2);}
+  .plist .prow.cur{border-color:var(--gold2);background:rgba(230,201,138,.1);}
+  .plist .prow.warn{border-left:3px solid var(--h);}
+  .prow .pgz{font-family:'Noto Serif KR',serif;font-weight:700;font-size:16px;min-width:44px;text-align:center;}
+  .prow .pmain{flex:1;font-size:13px;line-height:1.55;} .prow .pmain .pt2{font-size:11px;color:var(--dim);margin-bottom:2px;}
+  .tone{display:inline-block;font-size:10px;font-weight:700;padding:1px 7px;border-radius:99px;margin-left:6px;vertical-align:middle;}
+  .tone.good{background:#4faf7d22;color:#4faf7d;} .tone.warn{background:#e0625c22;color:#e0625c;} .tone.neu{background:#9c97a822;color:#9c97a8;}
+  .months{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;}
+  .mcell{border:1px solid var(--line);border-radius:10px;padding:9px 10px;font-size:12px;line-height:1.5;background:var(--panel2);}
+  .mcell .mh{font-weight:700;margin-bottom:3px;} .mcell .mh .gz2{font-family:'Noto Serif KR',serif;color:var(--gold2);font-size:11px;margin-left:4px;}
+  .cautionbox{background:rgba(224,98,92,.08);border:1px solid rgba(224,98,92,.35);border-radius:12px;padding:14px;font-size:13.5px;line-height:1.9;}
+  .cautionbox b{color:var(--h);}
   .mocknote{font-size:11px;color:#e0a05c;background:#e0a05c11;border:1px dashed #e0a05c44;border-radius:10px;padding:10px 12px;margin-bottom:14px;line-height:1.6;}
 </style>
 </head>
@@ -155,6 +173,33 @@ function renderDetail(a){
   const ohRows=['목','화','토','금','수'].map(e=>`<tr><td><span class="oh-pill" style="background:${C.EL_COLOR[e]}">${C.EL_HAN[e]}</span>${e}</td><td>${s.oh[e]}개</td></tr>`).join('');
   const tgRows=Object.keys(s.tg).map(k=>`<tr><td>${k} <span style="color:var(--dim);font-size:12px">${C.TENGOD_MEAN[k]}</span></td><td>${s.tg[k]}개</td></tr>`).join('');
 
+  // 성향(메인)
+  const P=C.describe.personality(s);
+  let persInner=`<div class="pers-head">${P.head}</div><div class="pers-essence">${P.essence}</div>`;
+  P.blocks.forEach(b=>{ persInner+=`<div class="pblock"><div class="pt">${b.t}</div><div class="pv">${b.v}</div></div>`; });
+  persInner+=`<div class="pers-sum">${P.summary}</div>`;
+
+  // 대운·월운·세운·조심
+  const toneTag=t=>`<span class="tone ${t.c}">${t.l}</span>`;
+  const now=s.luck?s.luck.nowY:0; let luckCards='';
+  if(s.luck){
+    const dl=C.describe.daeunList(s), sl=C.describe.saeunList(s), wl=C.describe.wolunList(s), warns=C.describe.cautions(s);
+    let daeun='<div class="card"><h3>🧭 대운(大運) 10년 흐름</h3><div class="plist">';
+    dl.forEach(dd=>{ const cur=(now>=+dd.years.split('~')[0]&&now<=+dd.years.split('~')[1]);
+      daeun+=`<div class="prow${cur?' cur':''}${dd.warn?' warn':''}"><div class="pgz">${dd.gz}<div style="font-size:10px;color:var(--dim);font-weight:400">${dd.ko}</div></div>
+        <div class="pmain"><div class="pt2">${dd.age} · ${dd.years}${cur?' · <b style="color:var(--gold)">현재</b>':''}</div>${dd.god}${toneTag(dd.tone)}<br>${dd.text}</div></div>`; });
+    daeun+='</div></div>';
+    let months='<div class="card"><h3>📅 올해('+now+') 월별 운세</h3><div class="months">';
+    wl.forEach(mm=>{ months+=`<div class="mcell"><div class="mh">${mm.idx}월<span class="gz2">${mm.gz}·${mm.ko}</span>${toneTag(mm.tone)}</div>${mm.text}</div>`; });
+    months+='</div></div>';
+    let saeun='<div class="card"><h3>📈 향후 10년 세운</h3><div class="plist">';
+    sl.forEach(y=>{ saeun+=`<div class="prow${y.year===now?' cur':''}${y.warn?' warn':''}"><div class="pgz">${y.gz}<div style="font-size:10px;color:var(--dim);font-weight:400">${y.ko}</div></div>
+      <div class="pmain"><div class="pt2">${y.year}년${y.year===now?' · <b style="color:var(--gold)">올해</b>':''}</div>${y.god}${toneTag(y.tone)} — ${y.text.replace(/^[^—]*—\s*/,'')}</div></div>`; });
+    saeun+='</div></div>';
+    let caution=''; if(warns.length) caution=`<div class="card"><h3>⚠️ 조심해야 할 시기</h3><div class="cautionbox"><b>${warns.join('</b>, <b>')}</b><br><span style="color:var(--dim);font-size:12px">— 변동·구설·과로·관재 주의. 큰 결정·계약·건강 재점검. (참고용)</span></div></div>`;
+    luckCards=daeun+months+saeun+caution;
+  }
+
   d.innerHTML=`
   <div class="mocknote">📌 검토용 템플릿입니다. 사주 8자·오행·십신·운 점수는 만세력 엔진으로 자동 계산되고, 아래 [상담 작성란]은 상담사가 직접 채우는 영역입니다.</div>
 
@@ -168,6 +213,10 @@ function renderDetail(a){
 
   <div class="card"><h3>🀄 사주 8글자 (四柱八字)</h3>
     <div class="pillars">${pillarCells}</div></div>
+
+  <div class="card pers-card"><h3>🌟 성향 핵심 분석</h3>${persInner}</div>
+
+  ${luckCards}
 
   <div class="card"><h3>🌳 오행 분포</h3><table>${ohRows}</table>
     <p class="interp" style="margin-top:12px">${C.describe.balance(s)}</p></div>
