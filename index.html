@@ -138,6 +138,20 @@
   .cautionbox{background:rgba(224,98,92,.08); border:1px solid rgba(224,98,92,.35); border-radius:12px; padding:14px; font-size:13.5px; line-height:1.9;}
   .cautionbox b{color:#e0625c;}
   .cta{margin-top:8px; padding-top:8px; display:flex; flex-direction:column; gap:10px;}
+  /* 공유 카드 (오프스크린) */
+  #share-card{position:fixed; left:-9999px; top:0; width:480px; padding:48px 40px; box-sizing:border-box; text-align:center;
+    background:linear-gradient(160deg,#0b0b12,#16121f 55%,#1d1730); border:1px solid rgba(230,201,138,.3); color:#f4f1ea; font-family:'Noto Sans KR',sans-serif;}
+  #share-card .sc-brand{font-family:'Noto Serif KR',serif; color:#c8a96a; letter-spacing:.18em; font-size:15px; margin-bottom:30px;}
+  #share-card .sc-il{font-family:'Noto Serif KR',serif; font-weight:900; font-size:96px; line-height:1; margin-bottom:12px;}
+  #share-card .sc-iltxt{font-size:18px; color:#e6c98a; font-weight:700; margin-bottom:8px;}
+  #share-card .sc-name{font-family:'Noto Serif KR',serif; font-weight:700; font-size:23px; margin-bottom:30px;}
+  #share-card .sc-scores{display:flex; gap:18px; margin-bottom:28px;}
+  #share-card .sc-s{flex:1; background:rgba(255,255,255,.05); border:1px solid rgba(230,201,138,.22); border-radius:18px; padding:22px 8px;}
+  #share-card .sc-s .scv{font-family:'Noto Serif KR',serif; font-weight:900; font-size:42px; line-height:1;}
+  #share-card .sc-s .sck{font-size:15px; color:#a8a3b5; margin-top:8px;}
+  #share-card .sc-line{font-size:16px; line-height:1.7; margin-bottom:20px;}
+  #share-card .sc-rec{display:inline-block; font-size:14px; color:#e6c98a; border:1px solid rgba(230,201,138,.3); border-radius:99px; padding:10px 20px; margin-bottom:36px;}
+  #share-card .sc-foot{font-family:'Noto Serif KR',serif; font-size:15px; color:#c8a96a; border-top:1px solid rgba(230,201,138,.2); padding-top:24px;}
   .foot{font-size:11px; color:var(--ink-dim); text-align:center; margin-top:18px; line-height:1.7;}
   .foot a{color:var(--gold-dim);}
 </style>
@@ -257,7 +271,7 @@
       <div class="cta">
         <button class="btn btn-ig" id="cta-ig">인스타 팔로우하고 해설지 받기</button>
         <button class="btn btn-gold" id="cta-reserve">오픈 기념 50% 예약하기</button>
-        <button class="btn btn-ghost" onclick="shareResult()">결과 공유하기</button>
+        <button class="btn btn-ghost" onclick="shareResult()">📸 결과 이미지 저장·공유</button>
         <p class="foot">본 진단은 오픈 기념 재미용 지표입니다.<br>
           <a href="#" onclick="go('land');return false;">↺ 다시 진단하기</a></p>
       </div>
@@ -294,7 +308,7 @@
 
     <div class="cta">
       <button class="btn btn-gold" id="e-reserve">오픈 기념 50% 상담+팔찌 예약</button>
-      <button class="btn btn-ghost" onclick="shareResult()">해설지 공유하기</button>
+      <button class="btn btn-ghost" onclick="shareResult()">📸 결과 이미지 저장·공유</button>
       <p class="foot">재미용 해설이며, 정밀 풀이는 전문 상담에서 제공돼요.</p>
     </div>
   </section>
@@ -331,11 +345,27 @@
 
 </div>
 
+<!-- 공유용 이미지 카드 (화면 밖에서 렌더 → 캡처) -->
+<div id="share-card">
+  <div class="sc-brand" id="sc-brand">사주 오행 공방 · 무료 3초 진단</div>
+  <div class="sc-il" id="sc-il">木</div>
+  <div class="sc-iltxt" id="sc-iltxt">갑목 · 큰 나무</div>
+  <div class="sc-name" id="sc-name">OO님의 사주</div>
+  <div class="sc-scores">
+    <div class="sc-s"><div class="scv" id="sc-money" style="color:#d8b13f">0%</div><div class="sck">💰 금전운</div></div>
+    <div class="sc-s"><div class="scv" id="sc-love" style="color:#e0625c">0%</div><div class="sck">💕 연애운</div></div>
+  </div>
+  <div class="sc-line" id="sc-sum">한 줄 성향</div>
+  <div class="sc-rec" id="sc-rec">행운의 색 · 추천 원석</div>
+  <div class="sc-foot" id="sc-foot">@saju_youth · 나도 3초 무료 진단 →</div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1.7.4/lunar.js"></script>
 <script src="saju.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-config.js"></script>
 <script src="db.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script>
 /* ===== 설정 (실제 운영값으로 교체) ===== */
 const CONFIG = {
@@ -525,9 +555,45 @@ async function submitApply(){
   finally{ if(btn){ btn.disabled=false; btn.textContent='신청 완료하기'; } }
 }
 
-function shareResult(){ const txt='내 사주 연애운·금전운 몇 %일까? 무료 3초 진단 ✨';
-  if(navigator.share) navigator.share({title:CONFIG.brandName,text:txt,url:location.href}).catch(()=>{});
-  else { navigator.clipboard&&navigator.clipboard.writeText(location.href); alert('링크가 복사됐어요! 친구에게 공유해보세요 :)'); } }
+function fillShareCard(){
+  if(!LAST) return; const {s,name}=LAST, C=SAJU, who=name?name+'님':'내';
+  const g=C.ILGAN[s.dayGan], nick=g.nick.replace(/\s*\(.*\)/,'');
+  $('sc-brand').textContent=CONFIG.brandName+' · 무료 3초 진단';
+  $('sc-il').textContent=C.EL_HAN[s.dayEl]; $('sc-il').style.color=C.EL_COLOR[s.dayEl];
+  $('sc-iltxt').textContent=`${C.GAN_KO[s.dayGan]}${s.dayEl} · ${nick}`;
+  $('sc-name').textContent=`${who} 사주 오행 리포트`;
+  $('sc-money').textContent=s.money+'%'; $('sc-love').textContent=s.love+'%';
+  $('sc-sum').textContent=`'${nick}' 유형 — ${g.strength.split('.')[0]}.`;
+  const r=C.REC[s.lack]; $('sc-rec').textContent=`행운의 색 ${r.color} · 원석 ${r.stone}`;
+  $('sc-foot').textContent=`${CONFIG.instagram} · 나도 3초 무료 진단 →`;
+}
+async function shareResult(){
+  if(!LAST) return;
+  // html2canvas 미로드 시: 링크 공유 폴백
+  if(typeof html2canvas==='undefined'){
+    if(navigator.share) navigator.share({title:CONFIG.brandName,text:'무료 3초 사주 진단 ✨',url:location.href}).catch(()=>{});
+    else { navigator.clipboard&&navigator.clipboard.writeText(location.href); alert('링크가 복사됐어요!'); }
+    return;
+  }
+  fillShareCard();
+  try{ if(document.fonts&&document.fonts.ready) await document.fonts.ready; }catch(e){}
+  let canvas;
+  try{ canvas=await html2canvas($('share-card'),{scale:2, backgroundColor:'#0b0b12', logging:false, useCORS:true}); }
+  catch(e){ alert('이미지 생성에 실패했어요. 잠시 후 다시 시도해주세요.'); return; }
+  const dataUrl=canvas.toDataURL('image/png');
+  try{
+    const blob=await (await fetch(dataUrl)).blob();
+    const file=new File([blob],'사주진단.png',{type:'image/png'});
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      await navigator.share({files:[file], text:'내 사주 연애운·금전운 몇%? 무료 3초 진단 ✨'});
+      return;
+    }
+  }catch(e){ if(e && e.name==='AbortError') return; }
+  // 폴백: 다운로드
+  const a=document.createElement('a'); a.href=dataUrl; a.download='사주진단.png';
+  document.body.appendChild(a); a.click(); a.remove();
+  alert('결과 이미지를 저장했어요! 인스타 스토리에 올려보세요 :)');
+}
 
 (function stars(){ const c=document.querySelector('.stars'),x=c.getContext('2d');
   function size(){c.width=innerWidth;c.height=innerHeight;} size(); addEventListener('resize',size);
