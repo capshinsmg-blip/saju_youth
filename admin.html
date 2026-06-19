@@ -93,7 +93,7 @@
 <div id="dash">
   <div class="top">
     <div class="ttl">신청자 만세력 풀이 <small id="cnt"></small></div>
-    <button onclick="logout()">로그아웃</button>
+    <div style="display:flex;gap:8px;"><button onclick="renderList()">🔄 새로고침</button><button onclick="logout()">로그아웃</button></div>
   </div>
   <div class="layout">
     <div class="list">
@@ -140,6 +140,8 @@ async function doLogin(){
   $('login').style.display='none'; $('dash').style.display='block'; renderList();
 }
 async function logout(){ if(window.DB) await DB.signOut(); $('dash').style.display='none'; $('login').style.display='flex'; $('pw').value=''; }
+// 창에 다시 돌아오면 목록 자동 갱신 (제출 후 새 신청자 즉시 반영)
+window.addEventListener('focus', ()=>{ if($('dash') && $('dash').style.display==='block') renderList(); });
 
 let SEL=null;
 async function renderList(){
