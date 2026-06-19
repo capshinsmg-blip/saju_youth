@@ -143,9 +143,16 @@ async function logout(){ if(window.DB) await DB.signOut(); $('dash').style.displ
 
 let SEL=null;
 async function renderList(){
-  let list = await DB.list();
+  let list=[];
+  try{ list = await DB.list(); }
+  catch(e){
+    $('appliList').innerHTML='<div style="color:#e0625c;font-size:13px;padding:14px;line-height:1.6;border:1px solid #e0625c55;border-radius:10px">신청자 목록 조회 오류:<br>'+(e&&(e.message||e.hint||e.code||JSON.stringify(e)))+'<br><br>(RLS 조회 정책 또는 로그인 세션 문제일 수 있어요)</div>';
+    $('cnt').textContent='· 조회 실패';
+    return;
+  }
   if(!DB.enabled) list = list.concat(SAMPLE);   // 폴백: 임시저장 + 샘플
-  $('cnt').textContent='· 총 '+list.length+'명 · '+(DB.enabled?'클라우드':'임시');
+  let who=''; try{ const u=await DB.user(); if(u&&u.email) who=' · '+u.email; }catch(e){}
+  $('cnt').textContent='· 총 '+list.length+'명 · '+(DB.enabled?'클라우드':'임시')+who;
   const c=$('appliList'); c.innerHTML='';
   list.forEach(a=>{ const el=document.createElement('div'); el.className='appli'+(SEL===a.id?' sel':'');
     const cal=a.calendar==='lunar'?'음력'+(a.leap?'(윤)':''):'양력';

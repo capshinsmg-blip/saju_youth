@@ -338,6 +338,7 @@
     </div>
     <button class="btn btn-ig" id="done-ig">인스타도 팔로우하기</button>
     <button class="btn btn-ghost" onclick="go('land')">처음으로</button>
+    <p class="hint" id="done-note" style="color:#e0a05c; line-height:1.6;"></p>
   </section>
 
 </div>
@@ -560,9 +561,20 @@ async function submitApply(btn){
     concern:$('a-concern').value, consent_ad:$('a-c2').checked,
     money:s.money, love:s.love, createdAt:new Date().toISOString().slice(0,16).replace('T',' ') };
   if(btn){ btn.disabled=true; btn.textContent='저장 중…'; }
-  try{ await DB.submit(app); go('done'); }
-  catch(e){ console.error('[apply] 저장 오류:', e); err.textContent='저장 중 문제가 생겼어요. 인터넷 연결 확인 후 다시 시도해주세요.'; }
+  let res;
+  try{ res=await DB.submit(app); }
+  catch(e){ res={ok:false, error:e}; }
   finally{ if(btn){ btn.disabled=false; btn.textContent='신청 완료하기'; } }
+  if(res && res.ok){
+    const e=res.error, msg=e&&(e.message||e.hint||e.code||JSON.stringify(e));
+    $('done-note').textContent = (res.mode==='local-fallback')
+      ? '※ 서버 저장에 실패해 임시저장됐어요. 관리자에 안 보이면 이 문구를 캡처해 보내주세요 → '+msg
+      : '';
+    go('done');
+  } else {
+    console.error('[apply] 저장 오류:', res&&res.error);
+    err.textContent='저장 중 문제가 생겼어요. 인터넷 연결 확인 후 다시 시도해주세요.';
+  }
 }
 
 function fillShareCard(){
