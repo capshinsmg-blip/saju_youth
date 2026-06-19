@@ -2,6 +2,11 @@
 
 "사주 오행 팔찌 공방"을 후킹(미끼)으로 사용하는 마케팅/전도 퍼널 프로젝트.
 
+## 🌐 배포 주소 (GitHub Pages)
+- 진단 페이지(QR용): **https://capshinsmg-blip.github.io/saju_youth/**
+- 관리자: **https://capshinsmg-blip.github.io/saju_youth/admin.html**
+- `main` 브랜치에 push하면 약 1분 뒤 자동 반영됩니다.
+
 ## 퍼널 한눈에 보기
 
 ```
