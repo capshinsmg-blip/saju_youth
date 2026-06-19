@@ -138,6 +138,8 @@
   .cautionbox{background:rgba(224,98,92,.08); border:1px solid rgba(224,98,92,.35); border-radius:12px; padding:14px; font-size:13.5px; line-height:1.9;}
   .cautionbox b{color:#e0625c;}
   .cta{margin-top:8px; padding-top:8px; display:flex; flex-direction:column; gap:10px;}
+  .locked2{border-style:solid; border-color:rgba(230,201,138,.4); background:rgba(230,201,138,.05);}
+  .locked2 ul{filter:none; opacity:.92;}
   /* 공유 카드 (오프스크린) */
   #share-card{position:fixed; left:-9999px; top:0; width:480px; padding:48px 40px; box-sizing:border-box; text-align:center;
     background:linear-gradient(160deg,#0b0b12,#16121f 55%,#1d1730); border:1px solid rgba(230,201,138,.3); color:#f4f1ea; font-family:'Noto Sans KR',sans-serif;}
@@ -292,19 +294,14 @@
       <div class="pillars" id="e-pillars" style="margin-bottom:14px;"></div>
       <div class="explist" id="e-pillar-list"></div></div>
 
-    <!-- 대운 / 올해 월운 / 향후 세운 / 조심 시기 -->
-    <div id="e-luck-sections"></div>
-
     <div class="card"><h3>⚖️ 오행 균형 해석</h3><p class="interp" id="e-balance"></p></div>
     <div class="card"><h3>🔟 십신(十神) 요약</h3><div class="explist" id="e-tengod"></div></div>
     <div class="card"><h3>💰 금전운 상세</h3><p class="interp" id="e-money"></p></div>
     <div class="card"><h3>💕 연애운 상세</h3><p class="interp" id="e-love"></p></div>
     <div class="card"><h3>🍀 나만의 개운 가이드</h3><p class="interp" id="e-luck"></p></div>
 
-    <div class="card locked"><div class="lk">🔒</div>
-      <h4>더 깊은 1:1 해석은 상담에서</h4>
-      <ul><li>나에게 딱 맞는 개운법·택일</li><li>대운·세운을 내 상황에 적용</li><li>고민 영역 집중 풀이</li></ul>
-      <div class="seal">— 자동 해설은 여기까지, 맞춤 풀이는 공방 상담에서 —</div></div>
+    <!-- 올해 월운 / 10년 대운·세운 — 2차 잠금(예약 시 공개) -->
+    <div id="e-luck-sections"></div>
 
     <div class="cta">
       <button class="btn btn-gold" id="e-reserve">오픈 기념 50% 상담+팔찌 예약</button>
@@ -328,7 +325,7 @@
     <label class="leap" style="margin-top:-2px;"><input type="checkbox" id="a-c2" /> <span>(선택) 광고성 정보(문자) 수신 동의</span></label>
 
     <div class="err" id="a-err"></div>
-    <button class="btn btn-gold" onclick="submitApply()">신청 완료하기</button>
+    <button class="btn btn-gold" onclick="submitApply(this)">신청 완료하기</button>
     <p class="hint" id="a-mode"></p>
   </section>
 
@@ -511,8 +508,20 @@ function renderExplain(){
     } else ei.innerHTML=`<div class="h">${pp.lab}주 <small>${m.role} · ${m.age}</small></div>태어난 시간을 모르면 시주는 제외돼요.`;
     pl.appendChild(ei); });
 
-  // 대운/월운/세운/조심
-  $('e-luck-sections').innerHTML=buildLuckHTML(s);
+  // 대운/월운/세운/조심 — 2차 잠금(예약 시 공개)
+  const yy = s.luck ? s.luck.nowY : '';
+  $('e-luck-sections').innerHTML=`
+    <div class="card locked locked2"><div class="lk">🔒</div>
+      <h4>올해 & 향후 10년 상세 운세</h4>
+      <ul>
+        <li>📅 올해(${yy}년) 1~12월 월별 운세</li>
+        <li>🧭 향후 10년 대운(大運)의 큰 흐름</li>
+        <li>📈 연도별 세운 &amp; ⚠️ 조심해야 할 시기</li>
+      </ul>
+      <div class="seal">— 예약하면 전문 상담사가 직접 풀어 전체 공개해드려요 —</div>
+      <button class="btn btn-gold" id="e-unlock" style="margin-top:14px;">🔓 예약하고 상세 운세 받기</button>
+    </div>`;
+  $('e-unlock').onclick=reserve;
 
   $('e-balance').innerHTML=C.describe.balance(s)+` 오행은 같은 글자가 많을수록 그 기운이 강하고, 0개면 그 분야를 의식적으로 보완하면 좋아요.`;
 
@@ -538,8 +547,9 @@ function reserve(){
     : '※ 현재 임시저장(이 기기) 모드 — Supabase 연동 시 클라우드 저장됩니다.';
   go('apply');
 }
-async function submitApply(){
+async function submitApply(btn){
   const err=$('a-err'); err.textContent='';
+  if(!LAST){ err.textContent='먼저 진단을 진행해주세요.'; go('form'); return; }
   const name=$('a-name').value.trim(), phone=$('a-phone').value.trim();
   if(!name){ err.textContent='이름을 입력해주세요.'; return; }
   if(!/^[0-9][0-9\- ]{8,}$/.test(phone)){ err.textContent='연락처를 정확히 입력해주세요.'; return; }
@@ -549,9 +559,9 @@ async function submitApply(){
     y:s.input.y, mo:s.input.mo, d:s.input.d, leap:!!s.input.leap, hour:s.input.hour,
     concern:$('a-concern').value, consent_ad:$('a-c2').checked,
     money:s.money, love:s.love, createdAt:new Date().toISOString().slice(0,16).replace('T',' ') };
-  const btn=event&&event.target; if(btn){ btn.disabled=true; btn.textContent='저장 중…'; }
+  if(btn){ btn.disabled=true; btn.textContent='저장 중…'; }
   try{ await DB.submit(app); go('done'); }
-  catch(e){ err.textContent='저장에 실패했어요. 잠시 후 다시 시도해주세요.'; }
+  catch(e){ console.error('[apply] 저장 오류:', e); err.textContent='저장 중 문제가 생겼어요. 인터넷 연결 확인 후 다시 시도해주세요.'; }
   finally{ if(btn){ btn.disabled=false; btn.textContent='신청 완료하기'; } }
 }
 

@@ -20,15 +20,23 @@
     enabled: !!client,
     mode: client ? 'supabase' : 'local',
 
-    /* 신청자 저장. app = 관리자 화면이 쓰는 형태의 객체 */
+    /* 신청자 저장. app = 관리자 화면이 쓰는 형태의 객체.
+       클라우드 실패 시에도 로컬 백업으로 리드를 잃지 않도록 함. */
     async submit(app){
       if(client){
-        const { error } = await client.from('applicants')
-          .insert({ name: app.name, phone: app.phone, payload: app });
-        if(error) throw error;
-        return;
+        try{
+          const { error } = await client.from('applicants')
+            .insert({ name: app.name, phone: app.phone, payload: app });
+          if(error) throw error;
+          return { ok:true, mode:'supabase' };
+        }catch(e){
+          console.error('[DB] Supabase 저장 실패 → 로컬 백업:', e && (e.message||e));
+          lsAdd({ ...app, id:'local-'+Date.now(), _cloudFailed:true });
+          return { ok:true, mode:'local-fallback', error:e };
+        }
       }
-      lsAdd({ ...app, id: 'local-'+Date.now() });
+      lsAdd({ ...app, id:'local-'+Date.now() });
+      return { ok:true, mode:'local' };
     },
 
     /* 신청자 목록 (관리자 화면 형태로 정규화해서 반환) */
