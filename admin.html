@@ -376,10 +376,15 @@ async function restoreItem(a){
   if(await mutate(a.id,{status})){ if(conflict) alert('같은 날짜에 확정 예약이 있어 "취소" 상태로 복구했어요.'); }
 }
 
+function scrollToDetail(){
+  // 모바일/좁은 화면에선 상세가 목록 아래에 쌓여 안 보이므로 자동 스크롤
+  if(window.matchMedia('(max-width:760px)').matches){ $('detail').scrollIntoView({behavior:'smooth', block:'start'}); }
+}
 function renderDetail(a){
-  const C=SAJU, s=C.compute({calendar:a.calendar,y:a.y,mo:a.mo,d:a.d,leap:a.leap,hour:a.hour,sex:a.sex});
   const d=$('detail');
-  if(s.error){ d.innerHTML='<div class="empty">사주 계산에 실패했어요 (날짜 확인 필요).</div>'; return; }
+  try{
+  const C=SAJU, s=C.compute({calendar:a.calendar,y:a.y,mo:a.mo,d:a.d,leap:a.leap,hour:a.hour,sex:a.sex});
+  if(s.error){ d.innerHTML='<div class="empty">사주 계산에 실패했어요 (날짜·생년월일 확인 필요).</div>'; scrollToDetail(); return; }
   const cal=a.calendar==='lunar'?('음력'+(a.leap?' 윤달':'')):'양력';
   const hourTxt=a.hour===null?'모름(시주 제외)':a.hour+'시경';
   const m=C.describe.money(s), l=C.describe.love(s), r=C.REC[s.lack];
@@ -487,6 +492,12 @@ function renderDetail(a){
     <label>상담 메모</label><textarea id="c-memo" placeholder="상담 중 특이사항·후속 액션">${memo.memo||''}</textarea>
     <button class="save" onclick="saveMemo('${a.id}')">상담 내용 저장</button>
   </div>`;
+  scrollToDetail();
+  }catch(e){
+    console.error('[renderDetail]', e);
+    d.innerHTML='<div class="empty" style="color:#e0625c;border:1px solid #e0625c55;border-radius:10px;text-align:left;line-height:1.7;padding:18px">상세 풀이를 표시하는 중 오류가 발생했어요.<br><br><b>'+((e&&e.message)||e)+'</b><br><br>신청 데이터 형식 문제일 수 있어요. 새로고침해도 계속되면 알려주세요.</div>';
+    scrollToDetail();
+  }
 }
 
 function loadMemo(id){ try{ return JSON.parse(localStorage.getItem('saju_memo_'+id)||'{}'); }catch(e){ return {}; } }

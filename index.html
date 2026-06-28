@@ -380,7 +380,13 @@ const CONFIG = {
   instagram:"@saju_youth",                  // TODO 실제 핸들
   instagramUrl:"https://instagram.com/",     // TODO 실제 URL
   reserveUrl:"#",                            // TODO 예약폼 링크
+  shareUrl:"https://capshinsmg-blip.github.io/saju_youth/", // 친구 공유 시 유입될 진단 페이지(배포 주소). 비우면 현재 주소 자동 사용
 };
+// 공유 링크: CONFIG.shareUrl(배포 주소)을 우선, 없으면 현재 페이지 주소
+function shareLink(){
+  const c=CONFIG.shareUrl;
+  return (c && /^https?:\/\//.test(c) && !/YOUR_/.test(c)) ? c : (location.origin+location.pathname);
+}
 
 let LAST=null; // 마지막 진단 결과 + 이름
 const $=id=>document.getElementById(id);
@@ -621,14 +627,17 @@ function fillShareCard(){
   $('sc-money').textContent=s.money+'%'; $('sc-love').textContent=s.love+'%';
   $('sc-sum').textContent=`'${nick}' 유형 — ${g.strength.split('.')[0]}.`;
   const r=C.REC[s.lack]; $('sc-rec').textContent=`행운의 색 ${r.color} · 원석 ${r.stone}`;
-  $('sc-foot').textContent=`${CONFIG.instagram} · 나도 3초 무료 진단 →`;
+  const link=shareLink().replace(/^https?:\/\//,'');
+  $('sc-foot').textContent=`나도 3초 무료 진단 → ${link}`;
 }
 async function shareResult(){
   if(!LAST) return;
+  const url=shareLink();
+  const shareText=`내 사주 연애운·금전운 몇%? 무료 3초 진단 ✨\n${url}`;
   // html2canvas 미로드 시: 링크 공유 폴백
   if(typeof html2canvas==='undefined'){
-    if(navigator.share) navigator.share({title:CONFIG.brandName,text:'무료 3초 사주 진단 ✨',url:location.href}).catch(()=>{});
-    else { navigator.clipboard&&navigator.clipboard.writeText(location.href); alert('링크가 복사됐어요!'); }
+    if(navigator.share) navigator.share({title:CONFIG.brandName,text:'무료 3초 사주 진단 ✨',url}).catch(()=>{});
+    else { navigator.clipboard&&navigator.clipboard.writeText(url); alert('진단 링크가 복사됐어요!\n'+url); }
     return;
   }
   fillShareCard();
@@ -640,15 +649,17 @@ async function shareResult(){
   try{
     const blob=await (await fetch(dataUrl)).blob();
     const file=new File([blob],'사주진단.png',{type:'image/png'});
+    // 이미지 + URL 동시 공유 (친구가 눌러서 2차 유입)
     if(navigator.canShare && navigator.canShare({files:[file]})){
-      await navigator.share({files:[file], text:'내 사주 연애운·금전운 몇%? 무료 3초 진단 ✨'});
+      await navigator.share({files:[file], text:shareText, url});
       return;
     }
   }catch(e){ if(e && e.name==='AbortError') return; }
-  // 폴백: 다운로드
+  // 폴백: 이미지 다운로드 + 링크 클립보드 복사
   const a=document.createElement('a'); a.href=dataUrl; a.download='사주진단.png';
   document.body.appendChild(a); a.click(); a.remove();
-  alert('결과 이미지를 저장했어요! 인스타 스토리에 올려보세요 :)');
+  try{ if(navigator.clipboard) await navigator.clipboard.writeText(url); }catch(e){}
+  alert('결과 이미지를 저장했어요! 진단 링크도 복사됐으니 함께 공유해보세요 :)\n'+url);
 }
 
 (function stars(){ const c=document.querySelector('.stars'),x=c.getContext('2d');
