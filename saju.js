@@ -226,9 +226,58 @@
   }
   function curDaeun(s){ if(!s.luck) return null; const now=s.luck.nowY; const d=s.luck.daeun.find(x=>now>=x.startYear&&now<=x.endYear); if(!d) return null; const i=periodInfo(s,d.gz); return {age:`${d.startAge}~${d.endAge}세`, years:`${d.startYear}~${d.endYear}`, gz:d.gz, ko:gz2ko(d.gz), ...i}; }
 
+  /* ===== 관심분야(고민) 맞춤 풀이 ===== */
+  const CONCERN_HEALTH={
+    목:'간·담(肝膽)·근육·눈. 스트레스로 기운이 뭉치기 쉬우니 산책·스트레칭으로 풀고, 신맛·녹색 채소가 도움돼요.',
+    화:'심장·소장·혈관. 과로·흥분으로 열이 오르기 쉬워요. 규칙적인 수면과 카페인 절제, 쓴맛 나물·붉은 채소가 좋아요.',
+    토:'비위·소화기. 생각이 많으면 소화부터 막혀요. 따뜻한 음식·규칙적 식사, 곡물·뿌리채소를 챙기세요.',
+    금:'폐·대장·피부·기관지. 건조·환절기에 약하니 호흡기 보온, 생강·무 등 흰 음식이 도움돼요.',
+    수:'신장·방광·뼈. 과로·한기에 약해요. 충분한 수분·휴식, 해조류·검은콩 등 검은 음식으로 보강하세요.'
+  };
+  function concern(s, key){
+    if(!key) return null;
+    const tg=s.tg, oh=s.oh, R=REC[s.lack];
+    const tip = `부족한 <b>${EL_HAN[s.lack]}(${s.lack})</b> 기운을 ${R.color}·${R.stone}(${R.dir})으로 보완하면 흐름에 도움돼요.`;
+    if(key==='연애'){
+      const L=love(s);
+      const extra = s.body==='신강' ? '기운이 강한 편이라 끌고 가려는 마음이 앞설 수 있어요. 상대의 속도에 한 박자 맞추면 인연이 오래갑니다.'
+                  : s.body==='신약' ? '섬세하고 배려가 깊어 좋은 파트너가 되지만, 끌려가지 않도록 내 마음을 분명히 표현하세요.'
+                  : '강약을 유연하게 오가 관계 조율에 강해요. 솔직한 대화가 인연을 키웁니다.';
+      return {title:'💕 연애 맞춤 풀이', body:`${L.body}<br><br>${extra} ${tip}`};
+    }
+    if(key==='금전'){
+      const M=money(s);
+      const extra = tg.재성>=2 ? '재성이 강해 기회형이지만 욕심이 과하면 새기 쉬우니 분산·저축 습관이 핵심이에요.'
+                  : tg.식상>=2 ? '식상(재능)이 강해 \u201c내 능력을 돈으로 바꾸는\u201d 구조가 잘 맞아요. 콘텐츠·기술·프리랜스가 유리해요.'
+                  : '큰 한 방보다 꾸준한 관리·복리형이 어울려요. 고정 지출을 줄이고 종잣돈을 모으는 전략이 좋아요.';
+      return {title:'💰 금전 맞춤 풀이', body:`${M.body}<br><br>${extra} ${tip}`};
+    }
+    if(key==='진로'){
+      const style = tg.관성>=2 ? '관성(조직·명예)이 강해 <b>안정된 조직·전문직·공직</b>에서 신뢰를 쌓을 때 빛나요.'
+                  : tg.식상>=2 ? '식상(표현·창작)이 강해 <b>창작·교육·기획·1인 사업</b> 등 자유롭게 표현하는 일이 맞아요.'
+                  : tg.재성>=2 ? '재성(실리·영업)이 강해 <b>사업·영업·재무</b> 등 결과로 말하는 분야가 유리해요.'
+                  : '특정 십신이 치우치지 않아 여러 분야에 적응해요. 관심 분야를 한 곳에 모으면 전문성이 빨리 쌓입니다.';
+      const body2 = s.body==='신강' ? '추진력이 좋아 주도적 역할·창업에 강하고,' : s.body==='신약' ? '협업·서포트·전문 보좌 역할에서 안정적으로 성장하고,' : '주도와 협업을 오가며 균형 있게 성장하고,';
+      return {title:'💼 진로 맞춤 풀이', body:`${style} ${body2} ${tip}`};
+    }
+    if(key==='대인관계'){
+      const body1 = tg.비겁>=2 ? '비겁이 강해 동료·친구가 많고 의리파지만, 경쟁·고집으로 부딪힐 수 있어 한 발 양보가 관계를 지켜요.'
+                  : tg.인성>=2 ? '인성이 강해 윗사람·조력자 복이 있고 잘 배워요. 받기만 하지 말고 먼저 베풀면 인덕이 커집니다.'
+                  : '두루 무난하게 어울리는 편이에요. 마음 맞는 소수와 깊게 가는 쪽이 더 편할 수 있어요.';
+      const tone = oh.화>=2 ? '표현이 따뜻해 사람을 잘 끌어요.' : '감정 표현을 조금 더 드러내면 오해가 줄어요.';
+      return {title:'🤝 대인관계 맞춤 풀이', body:`${body1} ${tone} ${tip}`};
+    }
+    if(key==='건강'){
+      const weak = CONCERN_HEALTH[s.lack]||'';
+      const strongNote = oh[s.strong]>=3 ? ` 반대로 ${EL_HAN[s.strong]}(${s.strong}) 기운은 강해(${oh[s.strong]}개) 과열되기 쉬우니 과로·과식을 조심하세요.` : '';
+      return {title:'🩺 건강 맞춤 풀이', body:`체질상 <b>${EL_HAN[s.lack]}(${s.lack})</b> 기운이 약해 관련 부위를 챙기면 좋아요 — ${weak}${strongNote}`};
+    }
+    return {title:'🔎 관심분야 풀이', body:`\u2018${key}\u2019 관심사예요. ${tip}`};
+  }
+
   global.SAJU={
     GAN_KO,ZHI_KO,GAN_EL,ZHI_EL,EL_HAN,EL_COLOR,EL_DESC,ILGAN,PILLAR_MEAN,REC,TENGOD_MEAN,SHISHEN_MEAN,
     compute, grade, ten10,
-    describe:{ money, love, ilgan, balance, personality, daeunList, saeunList, wolunList, cautions, curDaeun }
+    describe:{ money, love, ilgan, balance, personality, daeunList, saeunList, wolunList, cautions, curDaeun, concern }
   };
 })(typeof window!=='undefined'?window:globalThis);

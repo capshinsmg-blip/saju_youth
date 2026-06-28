@@ -19,6 +19,7 @@
     --card:rgba(255,255,255,.04);
   }
   *{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
+  html{color-scheme:dark;} /* OS 라이트/다크와 무관하게 폼 컨트롤(셀렉트 팝업·날짜선택기)을 다크로 고정 → 흰글자 안보임 방지 */
   html,body{height:100%;}
   body{
     font-family:'Noto Sans KR',sans-serif; color:var(--ink);
@@ -57,7 +58,8 @@
   .fsub{color:var(--ink-dim); font-size:14px; margin-bottom:24px;}
   .field{margin-bottom:18px;}
   .field label.l{display:block; font-size:13px; color:var(--gold-2); margin-bottom:9px; letter-spacing:.02em;}
-  .inp, select{width:100%; background:rgba(255,255,255,.05); border:1px solid var(--line); color:var(--ink); font-size:16px; font-family:inherit; border-radius:13px; padding:14px;}
+  .inp, select{width:100%; background:rgba(255,255,255,.05); border:1px solid var(--line); color:var(--ink); font-size:16px; font-family:inherit; border-radius:13px; padding:14px; color-scheme:dark;}
+  option{background:var(--bg-1); color:var(--ink);} /* 셀렉트 드롭다운 목록의 글자/배경 명시 → 라이트모드에서 흰글자 안보임 방지 */
   .inp:focus, select:focus{outline:none; border-color:var(--gold-2); background:rgba(255,255,255,.08);}
   select{appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23c8a96a' stroke-width='1.6' fill='none'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 16px center;}
   .row{display:flex; gap:10px;} .row>*{flex:1;}
@@ -131,14 +133,14 @@
   .plist .prow.cur{border-color:var(--gold-2); background:rgba(230,201,138,.1);}
   .plist .prow.warn{border-left:3px solid #e0625c;}
   .prow .pgz{font-family:'Noto Serif KR',serif; font-weight:700; font-size:17px; min-width:46px; text-align:center;}
-  .prow .pmain{flex:1; font-size:13px; line-height:1.55;}
+  .prow .pmain{flex:1; min-width:0; font-size:13px; line-height:1.55; overflow-wrap:anywhere;}
   .prow .pmain .pt2{font-size:11px; color:var(--ink-dim); margin-bottom:2px;}
   .tone{display:inline-block; font-size:10px; font-weight:700; padding:1px 7px; border-radius:99px; margin-left:6px; vertical-align:middle;}
   .tone.good{background:#4faf7d22; color:#4faf7d;} .tone.warn{background:#e0625c22; color:#e0625c;} .tone.neu{background:#a8a3b522; color:#a8a3b5;}
   .months{display:grid; grid-template-columns:repeat(2,1fr); gap:8px;}
   .mcell{border:1px solid var(--line); border-radius:10px; padding:9px 10px; font-size:12px; line-height:1.5; background:rgba(255,255,255,.03);}
   .mcell .mh{font-weight:700; margin-bottom:3px;} .mcell .mh .gz2{font-family:'Noto Serif KR',serif; color:var(--gold-2); font-size:11px; margin-left:4px;}
-  .cautionbox{background:rgba(224,98,92,.08); border:1px solid rgba(224,98,92,.35); border-radius:12px; padding:14px; font-size:13.5px; line-height:1.9;}
+  .cautionbox{background:rgba(224,98,92,.08); border:1px solid rgba(224,98,92,.35); border-radius:12px; padding:14px; font-size:13.5px; line-height:1.9; width:100%; overflow-wrap:anywhere;}
   .cautionbox b{color:#e0625c;}
   .cta{margin-top:8px; padding-top:8px; display:flex; flex-direction:column; gap:10px;}
   .locked2{border-style:solid; border-color:rgba(230,201,138,.4); background:rgba(230,201,138,.05);}

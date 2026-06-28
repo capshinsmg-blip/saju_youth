@@ -8,7 +8,9 @@
 <style>
   :root{ --bg:#0e0c14; --panel:#16131f; --panel2:#1c1830; --ink:#f1eee8; --dim:#9c97a8; --gold:#e6c98a; --gold2:#c8a96a; --line:rgba(230,201,138,.16); --m:#4faf7d;--h:#e0625c;--t:#d8b13f;--g:#dfe3ec;--s:#5b8fd6; }
   *{box-sizing:border-box;margin:0;padding:0;}
+  html{color-scheme:dark;} /* OS 라이트/다크와 무관하게 폼 컨트롤을 다크로 고정 */
   body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;}
+  option{background:var(--panel2);color:var(--ink);}
   a{color:var(--gold2);}
   /* 로그인 */
   #login{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;}
@@ -68,13 +70,13 @@
   .plist .prow.cur{border-color:var(--gold2);background:rgba(230,201,138,.1);}
   .plist .prow.warn{border-left:3px solid var(--h);}
   .prow .pgz{font-family:'Noto Serif KR',serif;font-weight:700;font-size:16px;min-width:44px;text-align:center;}
-  .prow .pmain{flex:1;font-size:13px;line-height:1.55;} .prow .pmain .pt2{font-size:11px;color:var(--dim);margin-bottom:2px;}
+  .prow .pmain{flex:1;min-width:0;font-size:13px;line-height:1.55;overflow-wrap:anywhere;} .prow .pmain .pt2{font-size:11px;color:var(--dim);margin-bottom:2px;}
   .tone{display:inline-block;font-size:10px;font-weight:700;padding:1px 7px;border-radius:99px;margin-left:6px;vertical-align:middle;}
   .tone.good{background:#4faf7d22;color:#4faf7d;} .tone.warn{background:#e0625c22;color:#e0625c;} .tone.neu{background:#9c97a822;color:#9c97a8;}
   .months{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;}
   .mcell{border:1px solid var(--line);border-radius:10px;padding:9px 10px;font-size:12px;line-height:1.5;background:var(--panel2);}
   .mcell .mh{font-weight:700;margin-bottom:3px;} .mcell .mh .gz2{font-family:'Noto Serif KR',serif;color:var(--gold2);font-size:11px;margin-left:4px;}
-  .cautionbox{background:rgba(224,98,92,.08);border:1px solid rgba(224,98,92,.35);border-radius:12px;padding:14px;font-size:13.5px;line-height:1.9;}
+  .cautionbox{background:rgba(224,98,92,.08);border:1px solid rgba(224,98,92,.35);border-radius:12px;padding:14px;font-size:13.5px;line-height:1.9;width:100%;overflow-wrap:anywhere;}
   .cautionbox b{color:var(--h);}
   .mocknote{font-size:11px;color:#e0a05c;background:#e0a05c11;border:1px dashed #e0a05c44;border-radius:10px;padding:10px 12px;margin-bottom:14px;line-height:1.6;}
   /* 탭 */
@@ -418,6 +420,9 @@ function renderDetail(a){
     luckCards=daeun+months+saeun+caution;
   }
 
+  const cn = a.concern ? C.describe.concern(s, a.concern) : null;
+  const concernCard = cn ? `<div class="card pers-card"><h3>${cn.title} <span style="color:var(--dim);font-weight:400">— 신청자가 선택한 고민</span></h3><p class="interp" style="line-height:1.85">${cn.body}</p></div>` : '';
+
   const isDup=dupSet().has(dupKey(a));
   const dupCard = isDup ? '<span class="badge dup">중복신청</span>' : '';
   const st=a.status||'active';
@@ -453,6 +458,8 @@ function renderDetail(a){
     <div class="pillars">${pillarCells}</div></div>
 
   <div class="card pers-card"><h3>🌟 성향 핵심 분석</h3>${persInner}</div>
+
+  ${concernCard}
 
   ${luckCards}
 
