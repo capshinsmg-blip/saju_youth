@@ -219,7 +219,7 @@ const SAMPLE=[
 
 /* ===== 상태 ===== */
 let DATA=[], STAFF=[], SEL=null, TAB='list';
-const now=new Date(); let calY=now.getFullYear(), calM=now.getMonth(); // 0-based month
+const _initDate=new Date(); let calY=_initDate.getFullYear(), calM=_initDate.getMonth(); // 0-based month
 
 async function doLogin(){
   if(window.DB && DB.enabled){
@@ -238,11 +238,16 @@ window.addEventListener('focus', ()=>{ if($('dash') && $('dash').style.display==
 let LIST_ERR=null, ADMIN_EMAIL='';
 async function loadAll(){
   LIST_ERR=null;
-  try{ DATA = await DB.list({includeDeleted:true}); }
-  catch(e){ LIST_ERR=e; DATA=[]; }
+  // 서로 독립적인 3개 호출 — 병렬 처리
+  const [listR, staffR, userR] = await Promise.all([
+    DB.list({includeDeleted:true}).then(d=>({d})).catch(e=>({e})),
+    DB.staffList().then(d=>({d})).catch(()=>({d:[]})),
+    DB.user().then(d=>({d})).catch(()=>({d:null}))
+  ]);
+  if(listR.e){ LIST_ERR=listR.e; DATA=[]; } else { DATA=listR.d; }
   if(!DB.enabled) DATA = DATA.concat(SAMPLE);
-  try{ STAFF = await DB.staffList(); }catch(e){ STAFF=[]; }
-  try{ const u=await DB.user(); ADMIN_EMAIL = (u&&u.email)||''; }catch(e){ ADMIN_EMAIL=''; }
+  STAFF = staffR.d || [];
+  ADMIN_EMAIL = (userR.d && userR.d.email) || '';
 }
 async function refresh(){ await loadAll(); renderAll(); }
 function renderAll(){
@@ -309,7 +314,7 @@ function renderCalendar(){
     const ds=calY+'-'+pad2(calM+1)+'-'+pad2(d);
     const cell=document.createElement('div'); cell.className='calcell'+(ds<todayS?' past':'')+(ds===todayS?' today':'');
     cell.innerHTML='<div class="dnum">'+d+'</div>';
-    (byDate[ds]||[]).sort((a,b)=> (a.status==='active'?-1:1)-(b.status==='active'?-1:1))
+    (byDate[ds]||[]).sort((a,b)=> (b.status==='active')-(a.status==='active'))   // active 우선
       .forEach(a=>{ const b=document.createElement('button'); b.className='bk '+(a.status==='cancelled'?'cancelled':'active');
         b.innerHTML=(a.name||'(무명)')+(a.staff?'<span class="stf">👤 '+a.staff+'</span>':'');
         b.onclick=()=>{ SEL=a.id; switchTab('list'); renderList(); renderDetail(a); window.scrollTo(0,0); };
