@@ -67,6 +67,9 @@
   .leap{display:flex; align-items:center; gap:9px; font-size:14px; color:var(--ink-dim); margin-top:-6px; margin-bottom:18px; cursor:pointer;}
   .leap input{width:18px; height:18px; accent-color:var(--gold-2);}
   .err{color:#e0625c; font-size:13px; min-height:18px; margin:2px 0 10px; text-align:center;}
+  input[type=date].inp{color-scheme:dark; min-height:50px;}
+  .datehint{font-size:12px; margin-top:8px; line-height:1.5; color:var(--ink-dim);}
+  .datehint.ok{color:#7fcf9b;} .datehint.no{color:#e0625c;}
 
   .rload{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:22px;}
   .spinner{width:54px; height:54px; border-radius:50%; border:3px solid rgba(230,201,138,.2); border-top-color:var(--gold); animation:spin 1s linear infinite;}
@@ -318,6 +321,9 @@
 
     <div class="field"><label class="l">이름</label><input class="inp" id="a-name" maxlength="10" placeholder="OO" /></div>
     <div class="field"><label class="l">연락처</label><input class="inp" id="a-phone" type="tel" inputmode="numeric" placeholder="010-0000-0000" /></div>
+    <div class="field"><label class="l">방문 희망 날짜</label>
+      <input class="inp" id="a-date" type="date" />
+      <p class="datehint" id="a-datehint">날짜를 선택하면 예약 가능 여부를 확인해요.</p></div>
     <div class="field"><label class="l">요즘 가장 큰 고민</label>
       <select id="a-concern"><option>연애</option><option>진로</option><option>금전</option><option>대인관계</option><option>건강</option></select></div>
 
@@ -334,6 +340,7 @@
     <div class="hero" style="text-align:center;">
       <div style="font-size:56px;">🎉</div>
       <h1 style="font-size:27px;">신청 완료!</h1>
+      <p id="done-date" style="color:var(--gold);font-weight:700;"></p>
       <p>상세 사주 분석지와 50% 쿠폰을<br>입력하신 연락처로 보내드릴게요.</p>
     </div>
     <button class="btn btn-ig" id="done-ig">인스타도 팔로우하기</button>
@@ -540,34 +547,58 @@ function renderExplain(){
     이 색·원석을 몸에 지니면(예: 오행 팔찌) 부족한 기운을 보완하는 데 도움돼요.`;
 }
 
-function reserve(){
+let BOOKED=new Set();   // 이미 예약된(active) 날짜
+function todayStr(){ const d=new Date(); return d.toISOString().slice(0,10); }
+async function reserve(){
   if(!LAST){ go('form'); return; }
   $('a-name').value = LAST.name||'';
   $('a-mode').textContent = (window.DB && DB.mode==='supabase')
     ? '신청 내용은 안전하게 저장됩니다.'
     : '※ 현재 임시저장(이 기기) 모드 — Supabase 연동 시 클라우드 저장됩니다.';
+  const di=$('a-date'); di.min=todayStr(); di.value=''; di.oninput=checkDate;
+  const hint=$('a-datehint'); hint.className='datehint'; hint.textContent='예약 가능한 날짜를 불러오는 중…';
   go('apply');
+  try{ BOOKED=new Set(await DB.bookedDates()); }
+  catch(e){ BOOKED=new Set(); }
+  hint.textContent='날짜를 선택하면 예약 가능 여부를 확인해요.';
+}
+function checkDate(){
+  const di=$('a-date'), hint=$('a-datehint'), v=di.value;
+  if(!v){ hint.className='datehint'; hint.textContent='날짜를 선택하면 예약 가능 여부를 확인해요.'; return; }
+  if(v<todayStr()){ hint.className='datehint no'; hint.textContent='지난 날짜는 선택할 수 없어요.'; return; }
+  if(BOOKED.has(v)){ hint.className='datehint no'; hint.textContent='😢 이미 예약이 찬 날짜예요. 다른 날짜를 골라주세요.'; return; }
+  hint.className='datehint ok'; hint.textContent='✅ 예약 가능한 날짜예요!';
 }
 async function submitApply(btn){
   const err=$('a-err'); err.textContent='';
   if(!LAST){ err.textContent='먼저 진단을 진행해주세요.'; go('form'); return; }
   const name=$('a-name').value.trim(), phone=$('a-phone').value.trim();
+  const reserveDate=$('a-date').value;
   if(!name){ err.textContent='이름을 입력해주세요.'; return; }
   if(!/^[0-9][0-9\- ]{8,}$/.test(phone)){ err.textContent='연락처를 정확히 입력해주세요.'; return; }
+  if(!reserveDate){ err.textContent='방문 희망 날짜를 선택해주세요.'; return; }
+  if(reserveDate<todayStr()){ err.textContent='지난 날짜는 선택할 수 없어요.'; return; }
+  if(BOOKED.has(reserveDate)){ err.textContent='이미 예약이 찬 날짜예요. 다른 날짜를 골라주세요.'; return; }
   if(!$('a-c1').checked){ err.textContent='개인정보 수집·이용 동의가 필요해요.'; return; }
   const s=LAST.s;
   const app={ name, phone, sex:s.input.sex, calendar:s.input.calendar,
     y:s.input.y, mo:s.input.mo, d:s.input.d, leap:!!s.input.leap, hour:s.input.hour,
-    concern:$('a-concern').value, consent_ad:$('a-c2').checked,
+    concern:$('a-concern').value, consent_ad:$('a-c2').checked, reserveDate,
     money:s.money, love:s.love, createdAt:new Date().toISOString().slice(0,16).replace('T',' ') };
   if(btn){ btn.disabled=true; btn.textContent='저장 중…'; }
   let res;
   try{ res=await DB.submit(app); }
   catch(e){ res={ok:false, error:e}; }
   finally{ if(btn){ btn.disabled=false; btn.textContent='신청 완료하기'; } }
+  if(res && res.conflict){
+    BOOKED.add(reserveDate); checkDate();
+    err.textContent='방금 다른 분이 이 날짜를 예약했어요. 다른 날짜를 선택해주세요.';
+    return;
+  }
   if(res && res.ok){
     const e=res.error, msg=e&&(e.message||e.hint||e.code||JSON.stringify(e));
     const note=$('done-note');
+    const dd=$('done-date'); dd.textContent = reserveDate ? '📅 방문 예약일: '+reserveDate : '';
     if(res.mode==='supabase'){ note.style.color='#7fcf9b'; note.textContent='☁️ 클라우드에 저장됐어요 (관리자에서 조회 가능)'; }
     else if(res.mode==='local-fallback'){ note.style.color='#e0a05c'; note.textContent='※ 서버 저장 실패로 임시저장됨. 이 문구를 캡처해 보내주세요 → '+msg; }
     else { note.style.color='#e0a05c'; note.textContent='💾 서버에 연결되지 않아 임시 저장됐어요(관리자엔 안 보임). 페이지를 새로고침 후 다시 시도해 주세요.'; }

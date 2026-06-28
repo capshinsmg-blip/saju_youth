@@ -77,6 +77,51 @@
   .cautionbox{background:rgba(224,98,92,.08);border:1px solid rgba(224,98,92,.35);border-radius:12px;padding:14px;font-size:13.5px;line-height:1.9;}
   .cautionbox b{color:var(--h);}
   .mocknote{font-size:11px;color:#e0a05c;background:#e0a05c11;border:1px dashed #e0a05c44;border-radius:10px;padding:10px 12px;margin-bottom:14px;line-height:1.6;}
+  /* 탭 */
+  .tabs{display:flex;gap:6px;padding:10px 18px 0;max-width:1100px;margin:0 auto;flex-wrap:wrap;}
+  .tabs button{background:var(--panel);border:1px solid var(--line);color:var(--dim);border-radius:10px 10px 0 0;padding:9px 15px;font-size:13px;cursor:pointer;font-family:inherit;}
+  .tabs button.active{background:var(--panel2);color:var(--gold);border-bottom-color:var(--panel2);}
+  .tabpane{padding:18px;max-width:1100px;margin:0 auto;}
+  /* 상태/중복 배지 */
+  .badge{display:inline-block;font-size:10px;font-weight:700;padding:1px 7px;border-radius:99px;margin-left:6px;vertical-align:middle;}
+  .badge.active{background:#4faf7d22;color:#4faf7d;} .badge.cancelled{background:#9c97a822;color:#9c97a8;}
+  .badge.dup{background:#e0625c22;color:#e0625c;} .badge.date{background:#d8b13f22;color:#d8b13f;}
+  .badge.staff{background:#5b8fd622;color:#5b8fd6;}
+  .appli.cancelled{opacity:.55;} .appli.cancelled .n{text-decoration:line-through;}
+  /* 캘린더 */
+  .calhead{display:flex;align-items:center;justify-content:center;gap:18px;margin-bottom:16px;}
+  .calhead button{background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:9px;width:38px;height:38px;font-size:18px;cursor:pointer;}
+  .calhead .mon{font-family:'Noto Serif KR',serif;font-size:19px;min-width:150px;text-align:center;}
+  .calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;}
+  .caldow{text-align:center;font-size:12px;color:var(--dim);padding:4px 0;}
+  .caldow.sun{color:var(--h);} .caldow.sat{color:var(--s);}
+  .calcell{min-height:78px;border:1px solid var(--line);border-radius:10px;padding:6px;background:var(--panel);font-size:11px;position:relative;}
+  .calcell.empty{background:transparent;border:none;}
+  .calcell.past{opacity:.4;}
+  .calcell .dnum{font-size:12px;color:var(--dim);margin-bottom:4px;}
+  .calcell.today .dnum{color:var(--gold);font-weight:700;}
+  .calcell .bk{display:block;width:100%;text-align:left;border:none;border-radius:7px;padding:5px 6px;margin-top:3px;font-size:11px;line-height:1.35;cursor:pointer;font-family:inherit;}
+  .calcell .bk.active{background:rgba(230,201,138,.16);color:var(--gold);}
+  .calcell .bk.cancelled{background:rgba(156,151,168,.16);color:var(--dim);text-decoration:line-through;}
+  .calcell .bk .stf{display:block;font-size:10px;color:var(--s);text-decoration:none;}
+  .callegend{margin-top:14px;font-size:12px;color:var(--dim);display:flex;gap:16px;flex-wrap:wrap;}
+  /* 담당자 */
+  .staffrow{display:flex;align-items:center;justify-content:space-between;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 14px;margin-bottom:8px;}
+  .staffrow .nm{font-weight:700;font-size:14px;}
+  .staffrow button{background:none;border:1px solid var(--h)55;color:var(--h);border-radius:8px;padding:5px 10px;font-size:12px;cursor:pointer;}
+  .staffadd{display:flex;gap:8px;margin-bottom:16px;}
+  .staffadd input{flex:1;background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:11px;font-size:14px;}
+  .staffadd button{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#241c0a;border:none;font-weight:700;border-radius:10px;padding:11px 18px;cursor:pointer;}
+  /* 예약 관리 카드 */
+  .resv .rrow{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px;}
+  .resv label.rl{font-size:12px;color:var(--gold2);min-width:64px;}
+  .resv input[type=date],.resv select{background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:9px;padding:9px 11px;font-size:14px;font-family:inherit;color-scheme:dark;}
+  .resv .sbtn{border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:9px;padding:8px 13px;font-size:13px;cursor:pointer;}
+  .resv .sbtn.on{border-color:var(--gold2);background:rgba(230,201,138,.14);color:var(--gold);}
+  .resv .danger{border-color:#e0625c55;color:var(--h);}
+  .trashrow{display:flex;align-items:center;justify-content:space-between;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:12px 14px;margin-bottom:8px;gap:10px;}
+  .trashrow .ti{font-size:13px;line-height:1.5;} .trashrow .ti b{color:var(--ink);}
+  .trashrow button{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#241c0a;border:none;font-weight:700;border-radius:9px;padding:9px 14px;font-size:13px;cursor:pointer;white-space:nowrap;}
 </style>
 </head>
 <body>
@@ -92,15 +137,57 @@
 
 <div id="dash">
   <div class="top">
-    <div class="ttl">신청자 만세력 풀이 <small id="cnt"></small></div>
-    <div style="display:flex;gap:8px;"><button onclick="renderList()">🔄 새로고침</button><button onclick="logout()">로그아웃</button></div>
+    <div class="ttl">사주 공방 관리자 <small id="cnt"></small></div>
+    <div style="display:flex;gap:8px;"><button onclick="refresh()">🔄 새로고침</button><button onclick="logout()">로그아웃</button></div>
   </div>
-  <div class="layout">
+
+  <div class="tabs">
+    <button data-tab="list" class="active" onclick="switchTab('list')">📋 신청자</button>
+    <button data-tab="cal" onclick="switchTab('cal')">📅 캘린더</button>
+    <button data-tab="staff" onclick="switchTab('staff')">👥 담당자</button>
+    <button data-tab="trash" onclick="switchTab('trash')">🗑 보관함 <span id="trashCnt"></span></button>
+  </div>
+
+  <!-- 신청자 목록 + 상세 -->
+  <div id="tab-list" class="tabpane layout">
     <div class="list">
       <div class="lhdr">신청자 목록</div>
       <div id="appliList"></div>
     </div>
     <div class="detail" id="detail"><div class="empty">왼쪽에서 신청자를 선택하면<br>세부 만세력 풀이가 표시됩니다.</div></div>
+  </div>
+
+  <!-- 캘린더 -->
+  <div id="tab-cal" class="tabpane" style="display:none;">
+    <div class="calhead">
+      <button onclick="calNav(-1)">‹</button>
+      <div class="mon" id="calMon"></div>
+      <button onclick="calNav(1)">›</button>
+    </div>
+    <div class="calgrid" id="calGrid"></div>
+    <div class="callegend">
+      <span><span class="badge active">예약확정</span> 방문 예정</span>
+      <span><span class="badge cancelled">취소</span> 취소된 일정</span>
+      <span>날짜 칸의 예약을 누르면 상세 풀이로 이동합니다.</span>
+    </div>
+  </div>
+
+  <!-- 담당자 -->
+  <div id="tab-staff" class="tabpane" style="display:none;">
+    <h3 style="font-family:'Noto Serif KR',serif;font-size:17px;margin-bottom:14px;">👥 담당자 관리</h3>
+    <div class="staffadd">
+      <input id="staffName" placeholder="담당자 이름 입력" onkeydown="if(event.key==='Enter')addStaff()" />
+      <button onclick="addStaff()">+ 등록</button>
+    </div>
+    <div id="staffList"></div>
+    <p style="color:var(--dim);font-size:12px;margin-top:12px;line-height:1.6;">등록한 담당자는 각 신청자 상세의 [예약 관리]에서 배치할 수 있어요.</p>
+  </div>
+
+  <!-- 보관함(삭제됨) -->
+  <div id="tab-trash" class="tabpane" style="display:none;">
+    <h3 style="font-family:'Noto Serif KR',serif;font-size:17px;margin-bottom:6px;">🗑 보관함 (삭제된 일정)</h3>
+    <p style="color:var(--dim);font-size:12px;margin-bottom:14px;line-height:1.6;">삭제된 일정은 여기에 보관돼요. 복구하면 다시 신청자 목록·캘린더에 나타납니다.</p>
+    <div id="trashList"></div>
   </div>
 </div>
 
@@ -113,12 +200,12 @@
 const ADMIN_PW='saju2026'; // 폴백(미설정) 모드 임시 비번
 const $=id=>document.getElementById(id);
 
-/* 샘플 신청자 (실제로는 폼/DB에서 불러옴) */
+/* 샘플 신청자 (폴백 모드용 — 실제로는 폼/DB에서 불러옴) */
 const SAMPLE=[
-  {id:'a1', name:'김서연', sex:'female', calendar:'solar', y:1998, mo:1, d:1, leap:false, hour:11, phone:'010-1234-5678', concern:'연애', createdAt:'2026-06-17 19:42'},
-  {id:'a2', name:'이도현', sex:'male', calendar:'solar', y:1990, mo:6, d:15, leap:false, hour:3, phone:'010-2222-3333', concern:'금전', createdAt:'2026-06-17 20:10'},
-  {id:'a3', name:'박지우', sex:'female', calendar:'lunar', y:2020, mo:4, d:5, leap:true, hour:9, phone:'010-9876-5432', concern:'진로', createdAt:'2026-06-18 11:05'},
-  {id:'a4', name:'최민준', sex:'male', calendar:'solar', y:1985, mo:12, d:25, leap:false, hour:null, phone:'010-5555-7777', concern:'대인관계', createdAt:'2026-06-18 13:30'},
+  {id:'a1', name:'김서연', sex:'female', calendar:'solar', y:1998, mo:1, d:1, leap:false, hour:11, phone:'010-1234-5678', concern:'연애', createdAt:'2026-06-17 19:42', reserveDate:'2026-07-03', status:'active', staff:''},
+  {id:'a2', name:'이도현', sex:'male', calendar:'solar', y:1990, mo:6, d:15, leap:false, hour:3, phone:'010-2222-3333', concern:'금전', createdAt:'2026-06-17 20:10', reserveDate:'2026-07-05', status:'active', staff:''},
+  {id:'a3', name:'박지우', sex:'female', calendar:'lunar', y:2020, mo:4, d:5, leap:true, hour:9, phone:'010-9876-5432', concern:'진로', createdAt:'2026-06-18 11:05', reserveDate:'2026-07-12', status:'cancelled', staff:''},
+  {id:'a4', name:'최민준', sex:'male', calendar:'solar', y:1985, mo:12, d:25, leap:false, hour:null, phone:'010-5555-7777', concern:'대인관계', createdAt:'2026-06-18 13:30', reserveDate:'', status:'active', staff:''},
 ];
 /* 로그인 UI: Supabase 설정 있으면 이메일+비번, 없으면 임시 비번 */
 (function loginUI(){
@@ -126,9 +213,13 @@ const SAMPLE=[
     $('email').style.display='block';
     $('loginNote').innerHTML='☁️ Supabase 연동됨 — 등록된 관리자 이메일/비밀번호로 로그인하세요.';
   } else {
-    $('loginNote').innerHTML='⚠️ 검토용 모드(백엔드 미설정). 임시 비밀번호: <b>saju2026</b> · 신청자는 샘플+이 브라우저 임시저장만 표시됩니다. 실제 운영은 docs/04 가이드 참고.';
+    $('loginNote').innerHTML='⚠️ 검토용 모드(백엔드 미설정). 임시 비밀번호: <b>saju2026</b> · 신청자는 샘플+이 브라우저 임시저장만 표시됩니다. 실제 운영은 docs/04·05 가이드 참고.';
   }
 })();
+
+/* ===== 상태 ===== */
+let DATA=[], STAFF=[], SEL=null, TAB='list';
+const now=new Date(); let calY=now.getFullYear(), calM=now.getMonth(); // 0-based month
 
 async function doLogin(){
   if(window.DB && DB.enabled){
@@ -137,32 +228,145 @@ async function doLogin(){
   } else {
     if($('pw').value!==ADMIN_PW){ alert('비밀번호가 틀렸어요. (검토용: saju2026)'); return; }
   }
-  $('login').style.display='none'; $('dash').style.display='block'; renderList();
+  $('login').style.display='none'; $('dash').style.display='block'; refresh();
 }
 async function logout(){ if(window.DB) await DB.signOut(); $('dash').style.display='none'; $('login').style.display='flex'; $('pw').value=''; }
-// 창에 다시 돌아오면 목록 자동 갱신 (제출 후 새 신청자 즉시 반영)
-window.addEventListener('focus', ()=>{ if($('dash') && $('dash').style.display==='block') renderList(); });
+// 창에 다시 돌아오면 자동 갱신 (제출 후 새 신청자 즉시 반영)
+window.addEventListener('focus', ()=>{ if($('dash') && $('dash').style.display==='block') refresh(); });
 
-let SEL=null;
-async function renderList(){
-  let list=[];
-  try{ list = await DB.list(); }
-  catch(e){
-    $('appliList').innerHTML='<div style="color:#e0625c;font-size:13px;padding:14px;line-height:1.6;border:1px solid #e0625c55;border-radius:10px">신청자 목록 조회 오류:<br>'+(e&&(e.message||e.hint||e.code||JSON.stringify(e)))+'<br><br>(RLS 조회 정책 또는 로그인 세션 문제일 수 있어요)</div>';
-    $('cnt').textContent='· 조회 실패';
-    return;
+/* ===== 데이터 로드 & 전체 렌더 ===== */
+let LIST_ERR=null, ADMIN_EMAIL='';
+async function loadAll(){
+  LIST_ERR=null;
+  try{ DATA = await DB.list({includeDeleted:true}); }
+  catch(e){ LIST_ERR=e; DATA=[]; }
+  if(!DB.enabled) DATA = DATA.concat(SAMPLE);
+  try{ STAFF = await DB.staffList(); }catch(e){ STAFF=[]; }
+  try{ const u=await DB.user(); ADMIN_EMAIL = (u&&u.email)||''; }catch(e){ ADMIN_EMAIL=''; }
+}
+async function refresh(){ await loadAll(); renderAll(); }
+function renderAll(){
+  renderList(); renderCalendar(); renderStaffPane(); renderTrash();
+  if(SEL){ const a=DATA.find(x=>x.id===SEL); if(a) renderDetail(a); }
+}
+
+function switchTab(t){
+  TAB=t;
+  ['list','cal','staff','trash'].forEach(k=>{ $('tab-'+k).style.display = (k===t)?(k==='list'?'flex':'block'):'none'; });
+  document.querySelectorAll('.tabs button[data-tab]').forEach(b=>b.classList.toggle('active', b.dataset.tab===t));
+}
+
+/* 중복 신청자 키: 이름+연락처 (삭제 제외) */
+function dupSet(){
+  const cnt={}, set=new Set();
+  DATA.filter(a=>a.status!=='deleted').forEach(a=>{ const k=(a.name||'')+'|'+(a.phone||''); cnt[k]=(cnt[k]||0)+1; });
+  Object.keys(cnt).forEach(k=>{ if(cnt[k]>1) set.add(k); });
+  return set;
+}
+const dupKey=a=>(a.name||'')+'|'+(a.phone||'');
+
+/* ===== 신청자 목록 ===== */
+function renderList(){
+  if(LIST_ERR){
+    $('appliList').innerHTML='<div style="color:#e0625c;font-size:13px;padding:14px;line-height:1.6;border:1px solid #e0625c55;border-radius:10px">신청자 목록 조회 오류:<br>'+(LIST_ERR&&(LIST_ERR.message||LIST_ERR.hint||LIST_ERR.code||JSON.stringify(LIST_ERR)))+'<br><br>(RLS 조회 정책 또는 로그인 세션 문제일 수 있어요)</div>';
+    $('cnt').textContent='· 조회 실패'; return;
   }
-  if(!DB.enabled) list = list.concat(SAMPLE);   // 폴백: 임시저장 + 샘플
-  let who=''; try{ const u=await DB.user(); if(u&&u.email) who=' · '+u.email; }catch(e){}
-  $('cnt').textContent='· 총 '+list.length+'명 · '+(DB.enabled?'클라우드':'임시')+who;
+  const visible=DATA.filter(a=>a.status!=='deleted');
+  const dels=DATA.filter(a=>a.status==='deleted').length;
+  $('cnt').textContent='· 총 '+visible.length+'명 · '+(DB.enabled?'클라우드':'임시')+(ADMIN_EMAIL?' · '+ADMIN_EMAIL:'');
+  $('trashCnt').textContent = dels?('('+dels+')'):'';
+  const dups=dupSet();
   const c=$('appliList'); c.innerHTML='';
-  list.forEach(a=>{ const el=document.createElement('div'); el.className='appli'+(SEL===a.id?' sel':'');
+  if(!visible.length){ c.innerHTML='<div class="empty" style="padding:30px 10px;">아직 신청자가 없어요.</div>'; return; }
+  visible.forEach(a=>{ const el=document.createElement('div'); el.className='appli'+(SEL===a.id?' sel':'')+(a.status==='cancelled'?' cancelled':'');
     const cal=a.calendar==='lunar'?'음력'+(a.leap?'(윤)':''):'양력';
-    el.innerHTML=`<div class="n">${a.name||'(무명)'}<span class="sx">${a.sex==='female'?'여':'남'}</span></div>
+    const isDup=dups.has(dupKey(a));
+    const stBadge = a.status==='cancelled'?'<span class="badge cancelled">취소</span>':'';
+    const dateBadge = a.reserveDate?('<span class="badge date">📅 '+a.reserveDate+'</span>'):'';
+    const staffBadge = a.staff?('<span class="badge staff">'+a.staff+'</span>'):'';
+    const dupBadge = isDup?'<span class="badge dup">중복신청</span>':'';
+    el.innerHTML=`<div class="n">${a.name||'(무명)'}<span class="sx">${a.sex==='female'?'여':'남'}</span>${stBadge}${dupBadge}</div>
       <div class="meta">${cal} ${a.y}.${a.mo}.${a.d} · ${a.phone||'-'}</div>
-      <span class="cc">고민: ${a.concern||'-'}</span>`;
+      <div style="margin-top:6px;">${dateBadge}${staffBadge}<span class="cc">고민: ${a.concern||'-'}</span></div>`;
     el.onclick=()=>{ SEL=a.id; renderList(); renderDetail(a); };
     c.appendChild(el); });
+}
+
+/* ===== 캘린더 ===== */
+function calNav(d){ calM+=d; if(calM<0){calM=11;calY--;} if(calM>11){calM=0;calY++;} renderCalendar(); }
+function pad2(n){ return (n<10?'0':'')+n; }
+function renderCalendar(){
+  $('calMon').textContent=calY+'년 '+(calM+1)+'월';
+  // 날짜별 예약 (삭제 제외). active 우선
+  const byDate={};
+  DATA.filter(a=>a.status!=='deleted' && a.reserveDate).forEach(a=>{ (byDate[a.reserveDate]=byDate[a.reserveDate]||[]).push(a); });
+  const grid=$('calGrid'); grid.innerHTML='';
+  ['일','월','화','수','목','금','토'].forEach((w,i)=>{ const h=document.createElement('div'); h.className='caldow'+(i===0?' sun':i===6?' sat':''); h.textContent=w; grid.appendChild(h); });
+  const first=new Date(calY,calM,1).getDay(), days=new Date(calY,calM+1,0).getDate();
+  const todayS=new Date().toISOString().slice(0,10);
+  for(let i=0;i<first;i++){ const e=document.createElement('div'); e.className='calcell empty'; grid.appendChild(e); }
+  for(let d=1;d<=days;d++){
+    const ds=calY+'-'+pad2(calM+1)+'-'+pad2(d);
+    const cell=document.createElement('div'); cell.className='calcell'+(ds<todayS?' past':'')+(ds===todayS?' today':'');
+    cell.innerHTML='<div class="dnum">'+d+'</div>';
+    (byDate[ds]||[]).sort((a,b)=> (a.status==='active'?-1:1)-(b.status==='active'?-1:1))
+      .forEach(a=>{ const b=document.createElement('button'); b.className='bk '+(a.status==='cancelled'?'cancelled':'active');
+        b.innerHTML=(a.name||'(무명)')+(a.staff?'<span class="stf">👤 '+a.staff+'</span>':'');
+        b.onclick=()=>{ SEL=a.id; switchTab('list'); renderList(); renderDetail(a); window.scrollTo(0,0); };
+        cell.appendChild(b); });
+    grid.appendChild(cell);
+  }
+}
+
+/* ===== 담당자 ===== */
+function renderStaffPane(){
+  const c=$('staffList'); c.innerHTML='';
+  if(!STAFF.length){ c.innerHTML='<div class="empty" style="padding:24px 10px;">등록된 담당자가 없어요.</div>'; return; }
+  STAFF.forEach(s=>{ const el=document.createElement('div'); el.className='staffrow';
+    el.innerHTML='<span class="nm">👤 '+s.name+'</span>';
+    const b=document.createElement('button'); b.textContent='삭제'; b.onclick=()=>removeStaff(s.id, s.name); el.appendChild(b);
+    c.appendChild(el); });
+}
+async function addStaff(){
+  const n=$('staffName').value.trim(); if(!n) return;
+  const r=await DB.staffAdd(n); if(r.error&&!r.ok){ alert('등록 실패'); return; }
+  $('staffName').value=''; await refresh(); switchTab('staff');
+}
+async function removeStaff(id, name){
+  if(!confirm('"'+name+'" 담당자를 삭제할까요?')) return;
+  await DB.staffRemove(id); await refresh(); switchTab('staff');
+}
+
+/* ===== 보관함(삭제됨) ===== */
+function renderTrash(){
+  const c=$('trashList'); c.innerHTML='';
+  const dels=DATA.filter(a=>a.status==='deleted');
+  if(!dels.length){ c.innerHTML='<div class="empty" style="padding:30px 10px;">보관함이 비어 있어요.</div>'; return; }
+  dels.forEach(a=>{ const el=document.createElement('div'); el.className='trashrow';
+    const cal=a.calendar==='lunar'?'음력':'양력';
+    el.innerHTML='<div class="ti"><b>'+(a.name||'(무명)')+'</b> · '+(a.phone||'-')+'<br>'+cal+' '+a.y+'.'+a.mo+'.'+a.d+(a.reserveDate?(' · 📅 '+a.reserveDate):'')+'</div>';
+    const b=document.createElement('button'); b.textContent='↩ 복구'; b.onclick=()=>restoreItem(a); el.appendChild(b);
+    c.appendChild(el); });
+}
+
+/* ===== 일정 변경 공통 ===== */
+async function mutate(id, patch){
+  const r=await DB.update(id, patch);
+  if(r.needMigration){ alert('Supabase에 예약 컬럼이 아직 없어요.\ndocs/05_예약_일정_마이그레이션.sql 을 SQL Editor에서 실행해주세요.'); return false; }
+  if(r.conflict){ alert('그 날짜엔 이미 다른 예약(확정)이 있어요. 다른 날짜를 고르세요.'); return false; }
+  if(!r.ok){ alert('변경 실패: '+(r.error&&(r.error.message||JSON.stringify(r.error)))); return false; }
+  await refresh(); return true;
+}
+async function setStatus(id, status){ await mutate(id, {status}); }
+async function assignStaff(id, staff){ await mutate(id, {staff}); }
+async function changeDate(id, reserveDate){ await mutate(id, {reserveDate}); }
+function emptyDetail(){ $('detail').innerHTML='<div class="empty">왼쪽에서 신청자를 선택하면<br>세부 만세력 풀이가 표시됩니다.</div>'; }
+async function softDelete(id){ const a=DATA.find(x=>x.id===id)||{}; if(!confirm('"'+(a.name||'')+'" 일정을 보관함으로 보낼까요? (복구 가능)')) return; if(await mutate(id,{status:'deleted'})){ SEL=null; emptyDetail(); } }
+async function restoreItem(a){
+  // 복구 시 같은 날짜 active 충돌하면 취소상태로 복구
+  const conflict = a.reserveDate && DATA.some(x=>x.id!==a.id && x.status==='active' && x.reserveDate===a.reserveDate);
+  const status = conflict?'cancelled':'active';
+  if(await mutate(a.id,{status})){ if(conflict) alert('같은 날짜에 확정 예약이 있어 "취소" 상태로 복구했어요.'); }
 }
 
 function renderDetail(a){
@@ -209,16 +413,36 @@ function renderDetail(a){
     luckCards=daeun+months+saeun+caution;
   }
 
+  const isDup=dupSet().has(dupKey(a));
+  const dupCard = isDup ? '<span class="badge dup">중복신청</span>' : '';
+  const st=a.status||'active';
+  const staffOpts = '<option value="">담당자 미배정</option>'+STAFF.map(x=>`<option value="${x.name}"${a.staff===x.name?' selected':''}>${x.name}</option>`).join('');
+
   d.innerHTML=`
   <div class="mocknote">📌 검토용 템플릿입니다. 사주 8자·오행·십신·운 점수는 만세력 엔진으로 자동 계산되고, 아래 [상담 작성란]은 상담사가 직접 채우는 영역입니다.</div>
 
-  <div class="card"><h3>👤 신청자 정보</h3>
+  <div class="card"><h3>👤 신청자 정보 ${dupCard}</h3>
     <div class="kv">
       <div><b>이름</b>${a.name||'-'}</div><div><b>성별</b>${a.sex==='female'?'여성':'남성'}</div>
       <div><b>연락처</b>${a.phone||'-'}</div><div><b>고민</b>${a.concern||'-'}</div>
       <div><b>생년월일</b>${cal} ${a.y}.${a.mo}.${a.d}</div><div><b>태어난 시</b>${hourTxt}</div>
       <div><b>양력환산</b>${s.solarStr||'-'}</div><div><b>신청일</b>${a.createdAt||'-'}</div>
     </div></div>
+
+  <div class="card resv"><h3>📅 예약 관리</h3>
+    <div class="rrow"><label class="rl">예약일</label>
+      <input type="date" id="rv-date" value="${a.reserveDate||''}" onchange="changeDate('${a.id}', this.value)" />
+      ${a.reserveDate?'':'<span style="color:var(--dim);font-size:12px;">아직 날짜 미지정</span>'}</div>
+    <div class="rrow"><label class="rl">담당자</label>
+      <select id="rv-staff" onchange="assignStaff('${a.id}', this.value)">${staffOpts}</select>
+      ${STAFF.length?'':'<span style="color:var(--dim);font-size:12px;">[담당자] 탭에서 먼저 등록하세요</span>'}</div>
+    <div class="rrow"><label class="rl">상태</label>
+      <button class="sbtn ${st==='active'?'on':''}" onclick="setStatus('${a.id}','active')">예약확정</button>
+      <button class="sbtn ${st==='cancelled'?'on':''}" onclick="setStatus('${a.id}','cancelled')">취소</button>
+      <button class="sbtn danger" onclick="softDelete('${a.id}')">🗑 삭제(보관함)</button>
+    </div>
+    <p style="color:var(--dim);font-size:12px;margin-top:4px;line-height:1.6;">‘취소’하면 그 날짜는 다시 예약 가능해져요. ‘삭제’는 보관함으로 이동(복구 가능).</p>
+  </div>
 
   <div class="card"><h3>🀄 사주 8글자 (四柱八字)</h3>
     <div class="pillars">${pillarCells}</div></div>

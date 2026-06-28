@@ -1,8 +1,14 @@
 /* =====================================================================
-   db.js — 신청자 데이터 저장/조회 추상화 레이어
-   - Supabase 설정이 있으면 클라우드 DB 사용 (어디서나 조회 가능)
+   db.js — 신청자/예약 데이터 저장·조회 추상화 레이어
+   - Supabase 설정이 있으면 클라우드 DB 사용 (어디서나 조회·중복차단 가능)
    - 없으면 localStorage 폴백 (이 브라우저에서만 — 검토/개발용)
-   index.html(신청 저장)과 admin.html(목록/인증)이 함께 사용.
+   index.html(신청 저장·예약일 조회)과 admin.html(목록·캘린더·담당자·인증)이 함께 사용.
+
+   예약/일정 모델 (payload + 전용 컬럼):
+   - reserve_date : 예약 날짜 (YYYY-MM-DD). 같은 날짜 active 1건만 허용(중복 차단)
+   - status       : 'active' | 'cancelled' | 'deleted'  (deleted = 보관함, 복구 가능)
+   - staff        : 담당자 이름
+   클라우드에선 전용 컬럼으로, 폴백에선 객체 필드로 저장.
 ===================================================================== */
 (function(){
   const cfg = window.SUPABASE_CONFIG || {};
@@ -13,41 +19,149 @@
   }
 
   const LS = 'saju_applicants';
+  const LS_STAFF = 'saju_staff';
   const lsGet = ()=>{ try{ return JSON.parse(localStorage.getItem(LS)||'[]'); }catch(e){ return []; } };
-  const lsAdd = o=>{ const a=lsGet(); a.unshift(o); localStorage.setItem(LS, JSON.stringify(a)); };
+  const lsSet = a=> localStorage.setItem(LS, JSON.stringify(a));
+  const lsAdd = o=>{ const a=lsGet(); a.unshift(o); lsSet(a); };
+  const staffGet = ()=>{ try{ return JSON.parse(localStorage.getItem(LS_STAFF)||'[]'); }catch(e){ return []; } };
+  const staffSet = a=> localStorage.setItem(LS_STAFF, JSON.stringify(a));
+
+  // 컬럼 미존재(마이그레이션 전) 에러 판별
+  const isMissingCol = e => e && (e.code==='42703' || e.code==='PGRST204' || /column .* does not exist/i.test(e.message||''));
+  // 유니크 충돌(같은 날짜 중복 예약)
+  const isConflict   = e => e && (e.code==='23505' || /duplicate key|unique/i.test(e.message||''));
+
+  // 클라우드 row → 관리자 화면 형태로 정규화
+  const norm = r => ({
+    ...(r.payload||{}),
+    id: r.id, name: r.name, phone: r.phone,
+    createdAt: r.created_at || (r.payload&&r.payload.createdAt) || '',
+    reserveDate: r.reserve_date || (r.payload&&r.payload.reserveDate) || '',
+    status: r.status || (r.payload&&r.payload.status) || 'active',
+    staff: r.staff || (r.payload&&r.payload.staff) || ''
+  });
 
   window.DB = {
     enabled: !!client,
     mode: client ? 'supabase' : 'local',
 
-    /* 신청자 저장. app = 관리자 화면이 쓰는 형태의 객체.
-       클라우드 실패 시에도 로컬 백업으로 리드를 잃지 않도록 함. */
+    /* ---------- 신청(예약) 저장 ----------
+       app.reserveDate(YYYY-MM-DD)가 있으면 예약일로 저장.
+       같은 날짜에 active 예약이 이미 있으면 conflict 반환(중복 차단). */
     async submit(app){
+      const payload = { ...app, status:'active' };
       if(client){
+        const row = { name:app.name, phone:app.phone, payload,
+                      reserve_date: app.reserveDate||null, status:'active', staff:null };
         try{
-          const { error } = await client.from('applicants')
-            .insert({ name: app.name, phone: app.phone, payload: app });
-          if(error) throw error;
+          let { error } = await client.from('applicants').insert(row);
+          if(error && isMissingCol(error)){
+            // 마이그레이션 전: 전용 컬럼 없이 저장(중복차단은 비활성)
+            ({ error } = await client.from('applicants')
+              .insert({ name:app.name, phone:app.phone, payload }));
+          }
+          if(error){
+            if(isConflict(error)) return { ok:false, conflict:true, error };
+            throw error;
+          }
           return { ok:true, mode:'supabase' };
         }catch(e){
           console.error('[DB] Supabase 저장 실패 → 로컬 백업:', e && (e.message||e));
-          lsAdd({ ...app, id:'local-'+Date.now(), _cloudFailed:true });
+          lsAdd({ ...payload, id:'local-'+Date.now(), _cloudFailed:true });
           return { ok:true, mode:'local-fallback', error:e };
         }
       }
-      lsAdd({ ...app, id:'local-'+Date.now() });
+      // 로컬 폴백: 같은 날짜 active 중복 차단
+      if(app.reserveDate){
+        const taken = lsGet().some(a=>(a.status||'active')==='active' && a.reserveDate===app.reserveDate);
+        if(taken) return { ok:false, conflict:true };
+      }
+      lsAdd({ ...payload, id:'local-'+Date.now() });
       return { ok:true, mode:'local' };
     },
 
-    /* 신청자 목록 (관리자 화면 형태로 정규화해서 반환) */
-    async list(){
+    /* ---------- 예약된 날짜 목록 (공개 조회) ----------
+       active 상태 예약일만 반환. index.html에서 달력 차단에 사용.
+       클라우드는 RPC(booked_dates) — 개인정보 노출 없이 날짜만 공개. */
+    async bookedDates(){
+      if(client){
+        try{
+          const { data, error } = await client.rpc('booked_dates');
+          if(error) throw error;
+          return (data||[]).map(d=> typeof d==='string' ? d : (d.booked_dates||d.reserve_date||d.date||'')).filter(Boolean);
+        }catch(e){
+          console.warn('[DB] booked_dates RPC 실패(마이그레이션 전?):', e && (e.message||e));
+          return [];
+        }
+      }
+      return lsGet().filter(a=>(a.status||'active')==='active' && a.reserveDate).map(a=>a.reserveDate);
+    },
+
+    /* 신청자 목록 (관리자 화면 형태로 정규화). 기본은 보관함(deleted) 제외 */
+    async list({ includeDeleted=true }={}){
+      let arr;
       if(client){
         const { data, error } = await client.from('applicants')
           .select('*').order('created_at', { ascending:false });
         if(error) throw error;
-        return (data||[]).map(r=>({ ...(r.payload||{}), id:r.id, name:r.name, phone:r.phone, createdAt:r.created_at }));
+        arr = (data||[]).map(norm);
+      } else {
+        arr = lsGet().map(a=>({ ...a, status:a.status||'active' }));
       }
-      return lsGet();
+      return includeDeleted ? arr : arr.filter(a=>a.status!=='deleted');
+    },
+
+    /* ---------- 일정 상태/담당자/날짜 변경 (관리자) ----------
+       patch: { status?, staff?, reserveDate? } */
+    async update(id, patch){
+      if(client){
+        const upd = {};
+        if('status' in patch) upd.status = patch.status;
+        if('staff' in patch) upd.staff = patch.staff;
+        if('reserveDate' in patch) upd.reserve_date = patch.reserveDate || null;
+        try{
+          let { error } = await client.from('applicants').update(upd).eq('id', id);
+          if(error && isMissingCol(error)) return { ok:false, error, needMigration:true };
+          if(error){ if(isConflict(error)) return { ok:false, conflict:true, error }; throw error; }
+          return { ok:true };
+        }catch(e){ return { ok:false, error:e }; }
+      }
+      const a=lsGet(); const i=a.findIndex(x=>x.id===id);
+      if(i<0) return { ok:false, error:{message:'not found'} };
+      if(patch.status==='active' && (patch.reserveDate||a[i].reserveDate)){
+        const date=patch.reserveDate||a[i].reserveDate;
+        const taken=a.some((x,j)=>j!==i && (x.status||'active')==='active' && x.reserveDate===date);
+        if(taken) return { ok:false, conflict:true };
+      }
+      Object.assign(a[i], patch); lsSet(a);
+      return { ok:true };
+    },
+
+    /* ---------- 담당자(staff) 명단 ---------- */
+    async staffList(){
+      if(client){
+        try{
+          const { data, error } = await client.from('staff').select('*').order('created_at',{ascending:true});
+          if(error) throw error;
+          return (data||[]).map(r=>({ id:r.id, name:r.name }));
+        }catch(e){ console.warn('[DB] staff 조회 실패(마이그레이션 전?) → 로컬:', e&&(e.message||e)); return staffGet(); }
+      }
+      return staffGet();
+    },
+    async staffAdd(name){
+      name=(name||'').trim(); if(!name) return { ok:false };
+      if(client){
+        try{ const { error } = await client.from('staff').insert({ name }); if(error) throw error; return { ok:true }; }
+        catch(e){ const a=staffGet(); a.push({ id:'local-'+Date.now(), name }); staffSet(a); return { ok:true, mode:'local-fallback', error:e }; }
+      }
+      const a=staffGet(); a.push({ id:'local-'+Date.now(), name }); staffSet(a); return { ok:true };
+    },
+    async staffRemove(id){
+      if(client){
+        try{ const { error } = await client.from('staff').delete().eq('id', id); if(error) throw error; return { ok:true }; }
+        catch(e){ const a=staffGet().filter(x=>x.id!==id); staffSet(a); return { ok:true, mode:'local-fallback', error:e }; }
+      }
+      const a=staffGet().filter(x=>x.id!==id); staffSet(a); return { ok:true };
     },
 
     /* 관리자 인증 (Supabase Auth — 이메일/비번) */
