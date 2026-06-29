@@ -5,7 +5,8 @@
    index.html(신청 저장·예약일 조회)과 admin.html(목록·캘린더·담당자·인증)이 함께 사용.
 
    예약/일정 모델 (payload + 전용 컬럼):
-   - reserve_date : 예약 날짜 (YYYY-MM-DD). 같은 날짜 active 1건만 허용(중복 차단)
+   - reserve_date : 예약 날짜 (YYYY-MM-DD)
+   - reserve_time : 예약 시간대 'HH:MM' (13:00~19:00, 1타임=1시간). 같은 날짜+시간 active 1건만 허용(중복 차단)
    - status       : 'active' | 'cancelled' | 'deleted'  (deleted = 보관함, 복구 가능)
    - staff        : 담당자 이름
    클라우드에선 전용 컬럼으로, 폴백에선 객체 필드로 저장.
@@ -37,6 +38,7 @@
     id: r.id, name: r.name, phone: r.phone,
     createdAt: r.created_at || (r.payload&&r.payload.createdAt) || '',
     reserveDate: r.reserve_date || (r.payload&&r.payload.reserveDate) || '',
+    reserveTime: r.reserve_time || (r.payload&&r.payload.reserveTime) || '',
     status: r.status || (r.payload&&r.payload.status) || 'active',
     staff: r.staff || (r.payload&&r.payload.staff) || ''
   });
@@ -46,13 +48,14 @@
     mode: client ? 'supabase' : 'local',
 
     /* ---------- 신청(예약) 저장 ----------
-       app.reserveDate(YYYY-MM-DD)가 있으면 예약일로 저장.
-       같은 날짜에 active 예약이 이미 있으면 conflict 반환(중복 차단). */
+       app.reserveDate(YYYY-MM-DD)+app.reserveTime('HH:MM')가 있으면 예약 타임으로 저장.
+       같은 날짜+시간에 active 예약이 이미 있으면 conflict 반환(중복 차단). */
     async submit(app){
       const payload = { ...app, status:'active' };
       if(client){
         const row = { name:app.name, phone:app.phone, payload,
-                      reserve_date: app.reserveDate||null, status:'active', staff:null };
+                      reserve_date: app.reserveDate||null, reserve_time: app.reserveTime||null,
+                      status:'active', staff:null };
         try{
           let { error } = await client.from('applicants').insert(row);
           if(error && isMissingCol(error)){
@@ -71,30 +74,35 @@
           return { ok:true, mode:'local-fallback', error:e };
         }
       }
-      // 로컬 폴백: 같은 날짜 active 중복 차단
-      if(app.reserveDate){
-        const taken = lsGet().some(a=>(a.status||'active')==='active' && a.reserveDate===app.reserveDate);
+      // 로컬 폴백: 같은 날짜+시간 active 중복 차단
+      if(app.reserveDate && app.reserveTime){
+        const taken = lsGet().some(a=>(a.status||'active')==='active'
+          && a.reserveDate===app.reserveDate && a.reserveTime===app.reserveTime);
         if(taken) return { ok:false, conflict:true };
       }
       lsAdd({ ...payload, id:'local-'+Date.now() });
       return { ok:true, mode:'local' };
     },
 
-    /* ---------- 예약된 날짜 목록 (공개 조회) ----------
-       active 상태 예약일만 반환. index.html에서 달력 차단에 사용.
-       클라우드는 RPC(booked_dates) — 개인정보 노출 없이 날짜만 공개. */
-    async bookedDates(){
+    /* ---------- 예약된 타임 목록 (공개 조회) ----------
+       active 상태의 예약 날짜+시간을 'YYYY-MM-DD HH:MM' 문자열로 반환.
+       index.html에서 타임 차단에 사용. 클라우드는 RPC(booked_slots) — 개인정보 비노출. */
+    async bookedSlots(){
       if(client){
         try{
-          const { data, error } = await client.rpc('booked_dates');
+          const { data, error } = await client.rpc('booked_slots');
           if(error) throw error;
-          return (data||[]).map(d=> typeof d==='string' ? d : (d.booked_dates||d.reserve_date||d.date||'')).filter(Boolean);
+          return (data||[]).map(r=>{
+            const d=r.reserve_date||r.date||'', t=r.reserve_time||r.time||'';
+            return d&&t ? (d+' '+t) : '';
+          }).filter(Boolean);
         }catch(e){
-          console.warn('[DB] booked_dates RPC 실패(마이그레이션 전?):', e && (e.message||e));
+          console.warn('[DB] booked_slots RPC 실패(마이그레이션 전?):', e && (e.message||e));
           return [];
         }
       }
-      return lsGet().filter(a=>(a.status||'active')==='active' && a.reserveDate).map(a=>a.reserveDate);
+      return lsGet().filter(a=>(a.status||'active')==='active' && a.reserveDate && a.reserveTime)
+        .map(a=>a.reserveDate+' '+a.reserveTime);
     },
 
     /* 신청자 목록 (관리자 화면 형태로 정규화). 기본은 보관함(deleted) 제외 */
@@ -111,14 +119,15 @@
       return includeDeleted ? arr : arr.filter(a=>a.status!=='deleted');
     },
 
-    /* ---------- 일정 상태/담당자/날짜 변경 (관리자) ----------
-       patch: { status?, staff?, reserveDate? } */
+    /* ---------- 일정 상태/담당자/날짜·시간 변경 (관리자) ----------
+       patch: { status?, staff?, reserveDate?, reserveTime? } */
     async update(id, patch){
       if(client){
         const upd = {};
         if('status' in patch) upd.status = patch.status;
         if('staff' in patch) upd.staff = patch.staff;
         if('reserveDate' in patch) upd.reserve_date = patch.reserveDate || null;
+        if('reserveTime' in patch) upd.reserve_time = patch.reserveTime || null;
         try{
           let { error } = await client.from('applicants').update(upd).eq('id', id);
           if(error && isMissingCol(error)) return { ok:false, error, needMigration:true };
@@ -128,9 +137,12 @@
       }
       const a=lsGet(); const i=a.findIndex(x=>x.id===id);
       if(i<0) return { ok:false, error:{message:'not found'} };
-      if(patch.status==='active' && (patch.reserveDate||a[i].reserveDate)){
-        const date=patch.reserveDate||a[i].reserveDate;
-        const taken=a.some((x,j)=>j!==i && (x.status||'active')==='active' && x.reserveDate===date);
+      const willStatus = ('status' in patch)?patch.status:(a[i].status||'active');
+      const date = ('reserveDate' in patch)?patch.reserveDate:a[i].reserveDate;
+      const time = ('reserveTime' in patch)?patch.reserveTime:a[i].reserveTime;
+      if(willStatus==='active' && date && time){
+        const taken=a.some((x,j)=>j!==i && (x.status||'active')==='active'
+          && x.reserveDate===date && x.reserveTime===time);
         if(taken) return { ok:false, conflict:true };
       }
       Object.assign(a[i], patch); lsSet(a);

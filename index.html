@@ -72,6 +72,13 @@
   input[type=date].inp{color-scheme:dark; min-height:50px;}
   .datehint{font-size:12px; margin-top:8px; line-height:1.5; color:var(--ink-dim);}
   .datehint.ok{color:#7fcf9b;} .datehint.no{color:#e0625c;}
+  .slots{display:grid; grid-template-columns:repeat(2,1fr); gap:9px; margin-top:4px;}
+  .slot{position:relative; border:1px solid var(--line); border-radius:12px; padding:13px 10px; font-size:14px; font-family:inherit; color:var(--ink); background:rgba(255,255,255,.04); cursor:pointer; transition:.15s; text-align:center;}
+  .slot .st{font-weight:700;} .slot .ss{display:block; font-size:11px; color:var(--ink-dim); margin-top:2px;}
+  .slot.sel{border-color:var(--gold-2); background:rgba(230,201,138,.16); color:var(--gold);}
+  .slot.taken{opacity:.4; cursor:not-allowed; text-decoration:line-through;}
+  .slot.taken .ss{text-decoration:none;}
+  .slotnote{font-size:12px; color:var(--ink-dim); margin-top:10px; line-height:1.5;}
 
   .rload{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:22px;}
   .spinner{width:54px; height:54px; border-radius:50%; border:3px solid rgba(230,201,138,.2); border-top-color:var(--gold); animation:spin 1s linear infinite;}
@@ -325,7 +332,10 @@
     <div class="field"><label class="l">연락처</label><input class="inp" id="a-phone" type="tel" inputmode="numeric" placeholder="010-0000-0000" /></div>
     <div class="field"><label class="l">방문 희망 날짜</label>
       <input class="inp" id="a-date" type="date" />
-      <p class="datehint" id="a-datehint">날짜를 선택하면 예약 가능 여부를 확인해요.</p></div>
+      <p class="datehint" id="a-datehint">날짜를 선택하면 예약 가능한 시간이 나와요.</p></div>
+    <div class="field" id="a-slot-field" style="display:none;"><label class="l">방문 시간대 (1타임 · 60분)</label>
+      <div class="slots" id="a-slots"></div>
+      <p class="slotnote" id="a-slotnote">운영시간 13:00~20:00 · 한 타임에 한 분만 예약돼요.</p></div>
     <div class="field"><label class="l">요즘 가장 큰 고민</label>
       <select id="a-concern"><option>연애</option><option>진로</option><option>금전</option><option>대인관계</option><option>건강</option></select></div>
 
@@ -555,7 +565,10 @@ function renderExplain(){
     이 색·원석을 몸에 지니면(예: 오행 팔찌) 부족한 기운을 보완하는 데 도움돼요.`;
 }
 
-let BOOKED=new Set();   // 이미 예약된(active) 날짜
+const SLOTS=[13,14,15,16,17,18,19];        // 13:00~20:00, 1타임=60분 → 7타임
+const slotKey=h=> (h<10?'0':'')+h+':00';   // 'HH:00'
+let BOOKED=new Set();   // 이미 예약된(active) 'YYYY-MM-DD HH:MM'
+let SELDATE='', SELSLOT='';
 function todayStr(){ const d=new Date(); return d.toISOString().slice(0,10); }
 async function reserve(){
   if(!LAST){ go('form'); return; }
@@ -563,35 +576,55 @@ async function reserve(){
   $('a-mode').textContent = (window.DB && DB.mode==='supabase')
     ? '신청 내용은 안전하게 저장됩니다.'
     : '※ 현재 임시저장(이 기기) 모드 — Supabase 연동 시 클라우드 저장됩니다.';
+  SELDATE=''; SELSLOT='';
   const di=$('a-date'); di.min=todayStr(); di.value=''; di.oninput=checkDate;
-  const hint=$('a-datehint'); hint.className='datehint'; hint.textContent='예약 가능한 날짜를 불러오는 중…';
+  $('a-slot-field').style.display='none'; $('a-slots').innerHTML='';
+  const hint=$('a-datehint'); hint.className='datehint'; hint.textContent='예약 가능한 시간을 불러오는 중…';
   go('apply');
-  try{ BOOKED=new Set(await DB.bookedDates()); }
+  try{ BOOKED=new Set(await DB.bookedSlots()); }
   catch(e){ BOOKED=new Set(); }
-  hint.textContent='날짜를 선택하면 예약 가능 여부를 확인해요.';
+  hint.textContent='날짜를 선택하면 예약 가능한 시간이 나와요.';
 }
 function checkDate(){
   const di=$('a-date'), hint=$('a-datehint'), v=di.value;
-  if(!v){ hint.className='datehint'; hint.textContent='날짜를 선택하면 예약 가능 여부를 확인해요.'; return; }
+  SELDATE=v; SELSLOT='';
+  $('a-slot-field').style.display='none';
+  if(!v){ hint.className='datehint'; hint.textContent='날짜를 선택하면 예약 가능한 시간이 나와요.'; return; }
   if(v<todayStr()){ hint.className='datehint no'; hint.textContent='지난 날짜는 선택할 수 없어요.'; return; }
-  if(BOOKED.has(v)){ hint.className='datehint no'; hint.textContent='😢 이미 예약이 찬 날짜예요. 다른 날짜를 골라주세요.'; return; }
-  hint.className='datehint ok'; hint.textContent='✅ 예약 가능한 날짜예요!';
+  const allTaken=SLOTS.every(h=>BOOKED.has(v+' '+slotKey(h)));
+  if(allTaken){ hint.className='datehint no'; hint.textContent='😢 이 날은 모든 시간대가 예약 마감됐어요. 다른 날짜를 골라주세요.'; return; }
+  hint.className='datehint ok'; hint.textContent='✅ 예약 가능한 날짜예요! 아래에서 시간대를 골라주세요.';
+  renderSlots(v);
+}
+function renderSlots(date){
+  const box=$('a-slots'); box.innerHTML='';
+  SLOTS.forEach(h=>{
+    const key=date+' '+slotKey(h), taken=BOOKED.has(key);
+    const el=document.createElement('button'); el.type='button';
+    el.className='slot'+(taken?' taken':'')+(SELSLOT===slotKey(h)?' sel':'');
+    el.innerHTML=`<span class="st">${slotKey(h)}</span><span class="ss">~${slotKey(h+1)} · 60분</span>`;
+    if(taken){ el.disabled=true; el.title='이미 예약된 시간이에요'; }
+    else el.onclick=()=>{ SELSLOT=slotKey(h); renderSlots(date); $('a-err').textContent=''; };
+    box.appendChild(el);
+  });
+  $('a-slot-field').style.display='block';
 }
 async function submitApply(btn){
   const err=$('a-err'); err.textContent='';
   if(!LAST){ err.textContent='먼저 진단을 진행해주세요.'; go('form'); return; }
   const name=$('a-name').value.trim(), phone=$('a-phone').value.trim();
-  const reserveDate=$('a-date').value;
+  const reserveDate=$('a-date').value, reserveTime=SELSLOT;
   if(!name){ err.textContent='이름을 입력해주세요.'; return; }
   if(!/^[0-9][0-9\- ]{8,}$/.test(phone)){ err.textContent='연락처를 정확히 입력해주세요.'; return; }
   if(!reserveDate){ err.textContent='방문 희망 날짜를 선택해주세요.'; return; }
   if(reserveDate<todayStr()){ err.textContent='지난 날짜는 선택할 수 없어요.'; return; }
-  if(BOOKED.has(reserveDate)){ err.textContent='이미 예약이 찬 날짜예요. 다른 날짜를 골라주세요.'; return; }
+  if(!reserveTime){ err.textContent='방문 시간대를 선택해주세요.'; return; }
+  if(BOOKED.has(reserveDate+' '+reserveTime)){ err.textContent='이미 예약된 시간대예요. 다른 시간을 골라주세요.'; return; }
   if(!$('a-c1').checked){ err.textContent='개인정보 수집·이용 동의가 필요해요.'; return; }
   const s=LAST.s;
   const app={ name, phone, sex:s.input.sex, calendar:s.input.calendar,
     y:s.input.y, mo:s.input.mo, d:s.input.d, leap:!!s.input.leap, hour:s.input.hour,
-    concern:$('a-concern').value, consent_ad:$('a-c2').checked, reserveDate,
+    concern:$('a-concern').value, consent_ad:$('a-c2').checked, reserveDate, reserveTime,
     money:s.money, love:s.love, createdAt:new Date().toISOString().slice(0,16).replace('T',' ') };
   if(btn){ btn.disabled=true; btn.textContent='저장 중…'; }
   let res;
@@ -599,14 +632,14 @@ async function submitApply(btn){
   catch(e){ res={ok:false, error:e}; }
   finally{ if(btn){ btn.disabled=false; btn.textContent='신청 완료하기'; } }
   if(res && res.conflict){
-    BOOKED.add(reserveDate); checkDate();
-    err.textContent='방금 다른 분이 이 날짜를 예약했어요. 다른 날짜를 선택해주세요.';
+    BOOKED.add(reserveDate+' '+reserveTime); SELSLOT=''; renderSlots(reserveDate);
+    err.textContent='방금 다른 분이 이 시간대를 예약했어요. 다른 시간을 선택해주세요.';
     return;
   }
   if(res && res.ok){
     const e=res.error, msg=e&&(e.message||e.hint||e.code||JSON.stringify(e));
     const note=$('done-note');
-    const dd=$('done-date'); dd.textContent = reserveDate ? '📅 방문 예약일: '+reserveDate : '';
+    const dd=$('done-date'); dd.textContent = reserveDate ? ('📅 방문 예약: '+reserveDate+' '+reserveTime+'~'+slotKey(parseInt(reserveTime)+1)) : '';
     if(res.mode==='supabase'){ note.style.color='#7fcf9b'; note.textContent='☁️ 클라우드에 저장됐어요 (관리자에서 조회 가능)'; }
     else if(res.mode==='local-fallback'){ note.style.color='#e0a05c'; note.textContent='※ 서버 저장 실패로 임시저장됨. 이 문구를 캡처해 보내주세요 → '+msg; }
     else { note.style.color='#e0a05c'; note.textContent='💾 서버에 연결되지 않아 임시 저장됐어요(관리자엔 안 보임). 페이지를 새로고침 후 다시 시도해 주세요.'; }

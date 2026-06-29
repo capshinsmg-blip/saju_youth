@@ -204,11 +204,14 @@ const $=id=>document.getElementById(id);
 
 /* 샘플 신청자 (폴백 모드용 — 실제로는 폼/DB에서 불러옴) */
 const SAMPLE=[
-  {id:'a1', name:'김서연', sex:'female', calendar:'solar', y:1998, mo:1, d:1, leap:false, hour:11, phone:'010-1234-5678', concern:'연애', createdAt:'2026-06-17 19:42', reserveDate:'2026-07-03', status:'active', staff:''},
-  {id:'a2', name:'이도현', sex:'male', calendar:'solar', y:1990, mo:6, d:15, leap:false, hour:3, phone:'010-2222-3333', concern:'금전', createdAt:'2026-06-17 20:10', reserveDate:'2026-07-05', status:'active', staff:''},
-  {id:'a3', name:'박지우', sex:'female', calendar:'lunar', y:2020, mo:4, d:5, leap:true, hour:9, phone:'010-9876-5432', concern:'진로', createdAt:'2026-06-18 11:05', reserveDate:'2026-07-12', status:'cancelled', staff:''},
-  {id:'a4', name:'최민준', sex:'male', calendar:'solar', y:1985, mo:12, d:25, leap:false, hour:null, phone:'010-5555-7777', concern:'대인관계', createdAt:'2026-06-18 13:30', reserveDate:'', status:'active', staff:''},
+  {id:'a1', name:'김서연', sex:'female', calendar:'solar', y:1998, mo:1, d:1, leap:false, hour:11, phone:'010-1234-5678', concern:'연애', createdAt:'2026-06-17 19:42', reserveDate:'2026-07-03', reserveTime:'13:00', status:'active', staff:''},
+  {id:'a2', name:'이도현', sex:'male', calendar:'solar', y:1990, mo:6, d:15, leap:false, hour:3, phone:'010-2222-3333', concern:'금전', createdAt:'2026-06-17 20:10', reserveDate:'2026-07-03', reserveTime:'15:00', status:'active', staff:''},
+  {id:'a3', name:'박지우', sex:'female', calendar:'lunar', y:2020, mo:4, d:5, leap:true, hour:9, phone:'010-9876-5432', concern:'진로', createdAt:'2026-06-18 11:05', reserveDate:'2026-07-12', reserveTime:'18:00', status:'cancelled', staff:''},
+  {id:'a4', name:'최민준', sex:'male', calendar:'solar', y:1985, mo:12, d:25, leap:false, hour:null, phone:'010-5555-7777', concern:'대인관계', createdAt:'2026-06-18 13:30', reserveDate:'', reserveTime:'', status:'active', staff:''},
 ];
+const SLOTS=[13,14,15,16,17,18,19];                 // 13:00~20:00, 1타임=60분
+const slotKey=h=> (h<10?'0':'')+h+':00';
+const slotLabel=t=> t ? (t+'~'+slotKey(parseInt(t)+1)) : '';
 /* 로그인 UI: Supabase 설정 있으면 이메일+비번, 없으면 임시 비번 */
 (function loginUI(){
   if(window.DB && DB.enabled){
@@ -289,7 +292,7 @@ function renderList(){
     const cal=a.calendar==='lunar'?'음력'+(a.leap?'(윤)':''):'양력';
     const isDup=dups.has(dupKey(a));
     const stBadge = a.status==='cancelled'?'<span class="badge cancelled">취소</span>':'';
-    const dateBadge = a.reserveDate?('<span class="badge date">📅 '+a.reserveDate+'</span>'):'';
+    const dateBadge = a.reserveDate?('<span class="badge date">📅 '+a.reserveDate+(a.reserveTime?(' '+a.reserveTime):'')+'</span>'):'';
     const staffBadge = a.staff?('<span class="badge staff">'+a.staff+'</span>'):'';
     const dupBadge = isDup?'<span class="badge dup">중복신청</span>':'';
     el.innerHTML=`<div class="n">${a.name||'(무명)'}<span class="sx">${a.sex==='female'?'여':'남'}</span>${stBadge}${dupBadge}</div>
@@ -316,9 +319,10 @@ function renderCalendar(){
     const ds=calY+'-'+pad2(calM+1)+'-'+pad2(d);
     const cell=document.createElement('div'); cell.className='calcell'+(ds<todayS?' past':'')+(ds===todayS?' today':'');
     cell.innerHTML='<div class="dnum">'+d+'</div>';
-    (byDate[ds]||[]).sort((a,b)=> (b.status==='active')-(a.status==='active'))   // active 우선
+    (byDate[ds]||[]).sort((a,b)=> (a.reserveTime||'').localeCompare(b.reserveTime||''))   // 시간순
       .forEach(a=>{ const b=document.createElement('button'); b.className='bk '+(a.status==='cancelled'?'cancelled':'active');
-        b.innerHTML=(a.name||'(무명)')+(a.staff?'<span class="stf">👤 '+a.staff+'</span>':'');
+        const tt=a.reserveTime?('<b>'+a.reserveTime+'</b> '):'';
+        b.innerHTML=tt+(a.name||'(무명)')+(a.staff?'<span class="stf">👤 '+a.staff+'</span>':'');
         b.onclick=()=>{ SEL=a.id; switchTab('list'); renderList(); renderDetail(a); window.scrollTo(0,0); };
         cell.appendChild(b); });
     grid.appendChild(cell);
@@ -351,7 +355,7 @@ function renderTrash(){
   if(!dels.length){ c.innerHTML='<div class="empty" style="padding:30px 10px;">보관함이 비어 있어요.</div>'; return; }
   dels.forEach(a=>{ const el=document.createElement('div'); el.className='trashrow';
     const cal=a.calendar==='lunar'?'음력':'양력';
-    el.innerHTML='<div class="ti"><b>'+(a.name||'(무명)')+'</b> · '+(a.phone||'-')+'<br>'+cal+' '+a.y+'.'+a.mo+'.'+a.d+(a.reserveDate?(' · 📅 '+a.reserveDate):'')+'</div>';
+    el.innerHTML='<div class="ti"><b>'+(a.name||'(무명)')+'</b> · '+(a.phone||'-')+'<br>'+cal+' '+a.y+'.'+a.mo+'.'+a.d+(a.reserveDate?(' · 📅 '+a.reserveDate+(a.reserveTime?(' '+a.reserveTime):'')):'')+'</div>';
     const b=document.createElement('button'); b.textContent='↩ 복구'; b.onclick=()=>restoreItem(a); el.appendChild(b);
     c.appendChild(el); });
 }
@@ -360,20 +364,21 @@ function renderTrash(){
 async function mutate(id, patch){
   const r=await DB.update(id, patch);
   if(r.needMigration){ alert('Supabase에 예약 컬럼이 아직 없어요.\ndocs/05_예약_일정_마이그레이션.sql 을 SQL Editor에서 실행해주세요.'); return false; }
-  if(r.conflict){ alert('그 날짜엔 이미 다른 예약(확정)이 있어요. 다른 날짜를 고르세요.'); return false; }
+  if(r.conflict){ alert('그 날짜·시간대엔 이미 다른 예약(확정)이 있어요. 다른 시간대를 고르세요.'); return false; }
   if(!r.ok){ alert('변경 실패: '+(r.error&&(r.error.message||JSON.stringify(r.error)))); return false; }
   await refresh(); return true;
 }
 async function setStatus(id, status){ await mutate(id, {status}); }
 async function assignStaff(id, staff){ await mutate(id, {staff}); }
 async function changeDate(id, reserveDate){ await mutate(id, {reserveDate}); }
+async function changeTime(id, reserveTime){ await mutate(id, {reserveTime}); }
 function emptyDetail(){ $('detail').innerHTML='<div class="empty">왼쪽에서 신청자를 선택하면<br>세부 만세력 풀이가 표시됩니다.</div>'; }
 async function softDelete(id){ const a=DATA.find(x=>x.id===id)||{}; if(!confirm('"'+(a.name||'')+'" 일정을 보관함으로 보낼까요? (복구 가능)')) return; if(await mutate(id,{status:'deleted'})){ SEL=null; emptyDetail(); } }
 async function restoreItem(a){
-  // 복구 시 같은 날짜 active 충돌하면 취소상태로 복구
-  const conflict = a.reserveDate && DATA.some(x=>x.id!==a.id && x.status==='active' && x.reserveDate===a.reserveDate);
+  // 복구 시 같은 날짜+시간대 active 충돌하면 취소상태로 복구
+  const conflict = a.reserveDate && a.reserveTime && DATA.some(x=>x.id!==a.id && x.status==='active' && x.reserveDate===a.reserveDate && x.reserveTime===a.reserveTime);
   const status = conflict?'cancelled':'active';
-  if(await mutate(a.id,{status})){ if(conflict) alert('같은 날짜에 확정 예약이 있어 "취소" 상태로 복구했어요.'); }
+  if(await mutate(a.id,{status})){ if(conflict) alert('같은 시간대에 확정 예약이 있어 "취소" 상태로 복구했어요.'); }
 }
 
 function scrollToDetail(){
@@ -432,6 +437,7 @@ function renderDetail(a){
   const dupCard = isDup ? '<span class="badge dup">중복신청</span>' : '';
   const st=a.status||'active';
   const staffOpts = '<option value="">담당자 미배정</option>'+STAFF.map(x=>`<option value="${x.name}"${a.staff===x.name?' selected':''}>${x.name}</option>`).join('');
+  const timeOpts = '<option value="">시간대 미지정</option>'+SLOTS.map(h=>{ const k=slotKey(h); return `<option value="${k}"${a.reserveTime===k?' selected':''}>${slotLabel(k)}</option>`; }).join('');
 
   d.innerHTML=`
   <div class="mocknote">📌 검토용 템플릿입니다. 사주 8자·오행·십신·운 점수는 만세력 엔진으로 자동 계산되고, 아래 [상담 작성란]은 상담사가 직접 채우는 영역입니다.</div>
@@ -448,6 +454,9 @@ function renderDetail(a){
     <div class="rrow"><label class="rl">예약일</label>
       <input type="date" id="rv-date" value="${a.reserveDate||''}" onchange="changeDate('${a.id}', this.value)" />
       ${a.reserveDate?'':'<span style="color:var(--dim);font-size:12px;">아직 날짜 미지정</span>'}</div>
+    <div class="rrow"><label class="rl">시간대</label>
+      <select id="rv-time" onchange="changeTime('${a.id}', this.value)">${timeOpts}</select>
+      <span style="color:var(--dim);font-size:12px;">운영 13:00~20:00 · 1타임 60분</span></div>
     <div class="rrow"><label class="rl">담당자</label>
       <select id="rv-staff" onchange="assignStaff('${a.id}', this.value)">${staffOpts}</select>
       ${STAFF.length?'':'<span style="color:var(--dim);font-size:12px;">[담당자] 탭에서 먼저 등록하세요</span>'}</div>
