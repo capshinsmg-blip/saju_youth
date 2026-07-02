@@ -79,6 +79,19 @@
   .cautionbox{background:rgba(224,98,92,.08);border:1px solid rgba(224,98,92,.35);border-radius:12px;padding:14px;font-size:13.5px;line-height:1.9;width:100%;overflow-wrap:anywhere;}
   .cautionbox b{color:var(--h);}
   .mocknote{font-size:11px;color:#b8721a;background:#b8721a11;border:1px dashed #b8721a44;border-radius:10px;padding:10px 12px;margin-bottom:14px;line-height:1.6;}
+  /* 결과지 해설(상담사용 상세 풀이) */
+  .cardguide{font-size:12.5px;line-height:1.7;color:var(--dim);background:var(--panel2);border-radius:10px;padding:10px 12px;margin:-4px 0 12px;}
+  .pdetail{margin-top:14px;border-top:1px solid var(--line);}
+  .pdetail .ei{padding:12px 0;border-bottom:1px solid rgba(0,0,0,.06);font-size:13px;line-height:1.75;}
+  .pdetail .ei:last-child{border-bottom:none;padding-bottom:2px;}
+  .pdetail .ei .h{font-weight:700;margin-bottom:3px;} .pdetail .ei .h small{color:var(--dim);font-weight:400;margin-left:6px;}
+  .pdetail .ei b{color:var(--gold);}
+  .godmean{display:block;font-size:12px;color:var(--dim);margin:3px 0 5px;line-height:1.6;}
+  .pdesc{font-size:13px;line-height:1.75;margin-top:2px;}
+  .padvice{font-size:12.5px;line-height:1.7;color:#7a5a10;background:rgba(230,201,138,.14);border-radius:8px;padding:7px 10px;margin-top:7px;}
+  /* 인쇄 버튼 */
+  .printbar{display:flex;justify-content:flex-end;margin-bottom:12px;}
+  .printbar button{background:linear-gradient(135deg,var(--gold-btn),var(--gold-btn2));color:#241c0a;border:none;font-weight:700;border-radius:10px;padding:10px 16px;font-size:13px;cursor:pointer;}
   /* 탭 */
   .tabs{display:flex;gap:6px;padding:10px 18px 0;max-width:1100px;margin:0 auto;flex-wrap:wrap;}
   .tabs button{background:var(--panel);border:1px solid var(--line);color:var(--dim);border-radius:10px 10px 0 0;padding:9px 15px;font-size:13px;cursor:pointer;font-family:inherit;}
@@ -124,6 +137,16 @@
   .trashrow{display:flex;align-items:center;justify-content:space-between;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:12px 14px;margin-bottom:8px;gap:10px;}
   .trashrow .ti{font-size:13px;line-height:1.5;} .trashrow .ti b{color:var(--ink);}
   .trashrow button{background:linear-gradient(135deg,var(--gold-btn),var(--gold-btn2));color:#241c0a;border:none;font-weight:700;border-radius:9px;padding:9px 14px;font-size:13px;cursor:pointer;white-space:nowrap;}
+  /* ===== 인쇄 (풀이 결과지만 출력) ===== */
+  @media print{
+    *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    body{background:#fff;}
+    .top,.tabs,.list,.mocknote,.resv,.printbar,.consult .save{display:none !important;}
+    .layout{display:block;padding:0;max-width:none;}
+    .detail{width:100%;}
+    .card{break-inside:avoid;box-shadow:none;}
+    .consult textarea{border:1px solid #ccc;resize:none;}
+  }
 </style>
 </head>
 <body>
@@ -202,6 +225,14 @@
 const ADMIN_PW='saju2026'; // 폴백(미설정) 모드 임시 비번
 const $=id=>document.getElementById(id);
 const EL_TEXT={목:'#158049',화:'#c23b32',토:'#a6741a',금:'#5b6472',수:'#3f6fb8'}; // 오행 텍스트색 — 흰 배경에서도 읽히도록 어둡게 보정(EL_COLOR는 원색이라 카드 배경용)
+/* 신청일 등 일시 표기: "6월 17일 19:42" (ISO·'YYYY-MM-DD HH:mm' 모두 수용) */
+function fmtWhen(v){
+  if(!v) return '-';
+  let d=new Date(v);
+  if(isNaN(d)){ const m=String(v).match(/(\d{4})-(\d{1,2})-(\d{1,2})[ T](\d{1,2}):(\d{2})/); if(m) d=new Date(+m[1],+m[2]-1,+m[3],+m[4],+m[5]); }
+  if(isNaN(d)) return String(v);
+  return (d.getMonth()+1)+'월 '+d.getDate()+'일 '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+}
 
 /* 샘플 신청자 (폴백 모드용 — 실제로는 폼/DB에서 불러옴) */
 const SAMPLE=[
@@ -403,6 +434,9 @@ function renderDetail(a){
       <small>${C.GAN_KO[p.gan]}${C.ZHI_KO[p.zhi]}</small></div></div>`; }).join('');
   const ohRows=['목','화','토','금','수'].map(e=>`<tr><td><span class="oh-pill" style="background:${C.EL_COLOR[e]}">${C.EL_HAN[e]}</span>${e}</td><td>${s.oh[e]}개</td></tr>`).join('');
   const tgRows=Object.keys(s.tg).map(k=>`<tr><td>${k} <span style="color:var(--dim);font-size:12px">${C.TENGOD_MEAN[k]}</span></td><td>${s.tg[k]}개</td></tr>`).join('');
+  // 8글자 기둥별 상세 풀이 (입문 상담사가 그대로 읽어줄 수 있는 해설)
+  const pillarExplain=C.describe.pillarsDetail(s).map(pd=>
+    `<div class="ei"><div class="h">${pd.gz?`${pd.lab}주 · ${pd.gz}(${pd.ko})`:pd.lab+'주'}<small>${pd.head.split('— ')[1]||''}</small></div>${pd.text}</div>`).join('');
 
   // 성향(메인)
   const P=C.describe.personality(s);
@@ -415,17 +449,24 @@ function renderDetail(a){
   const now=s.luck?s.luck.nowY:0; let luckCards='';
   if(s.luck){
     const dl=C.describe.daeunList(s), sl=C.describe.saeunList(s), wl=C.describe.wolunList(s), warns=C.describe.cautions(s);
-    let daeun='<div class="card"><h3>🧭 대운(大運) 10년 흐름</h3><div class="plist">';
+    // 대운·세운 공통 행 렌더러 — 십신의 뜻·시기 해설·조언까지 그대로 읽어줄 수 있게
+    const luckRow=(head, it, cur)=>`<div class="prow${cur?' cur':''}${it.warn?' warn':''}"><div class="pgz">${it.gz}<div style="font-size:10px;color:var(--dim);font-weight:400">${it.ko}</div></div>
+      <div class="pmain"><div class="pt2">${head}</div>
+        <b>${it.god}</b>${toneTag(it.tone)}<span class="godmean">${it.mean}</span>
+        <div class="pdesc">${it.period}${it.chung?' '+it.chungNote:''}</div>
+        <div class="padvice">💡 ${it.advice}</div></div></div>`;
+    let daeun='<div class="card"><h3>🧭 대운(大運) 10년 흐름</h3>'
+      +'<p class="cardguide">대운은 10년마다 바뀌는 인생의 큰 계절이에요. 좋고 나쁨보다 “이 시기에 어떤 기운이 들어오는가”로 읽어주세요. <b>주의</b> 표시는 나쁜 운이 아니라, 신경 써서 관리하면 오히려 도약할 수 있는 시기라는 뜻입니다.</p><div class="plist">';
     dl.forEach(dd=>{ const cur=(now>=+dd.years.split('~')[0]&&now<=+dd.years.split('~')[1]);
-      daeun+=`<div class="prow${cur?' cur':''}${dd.warn?' warn':''}"><div class="pgz">${dd.gz}<div style="font-size:10px;color:var(--dim);font-weight:400">${dd.ko}</div></div>
-        <div class="pmain"><div class="pt2">${dd.age} · ${dd.years}${cur?' · <b style="color:var(--gold)">현재</b>':''}</div>${dd.god}${toneTag(dd.tone)}<br>${dd.text}</div></div>`; });
+      daeun+=luckRow(`${dd.age} · ${dd.years}${cur?' · <b style="color:var(--gold)">현재</b>':''}`, dd, cur); });
     daeun+='</div></div>';
-    let months='<div class="card"><h3>📅 올해('+now+') 월별 운세</h3><div class="months">';
+    let months='<div class="card"><h3>📅 올해('+now+') 월별 운세</h3>'
+      +'<p class="cardguide">그 달에 들어오는 기운의 흐름이에요. 절기(節氣) 기준 달이라 실제 양력과 약 1개월 차이가 날 수 있습니다.</p><div class="months">';
     wl.forEach(mm=>{ months+=`<div class="mcell"><div class="mh">${mm.idx}월<span class="gz2">${mm.gz}·${mm.ko}</span>${toneTag(mm.tone)}</div>${mm.text}</div>`; });
     months+='</div></div>';
-    let saeun='<div class="card"><h3>📈 향후 10년 세운</h3><div class="plist">';
-    sl.forEach(y=>{ saeun+=`<div class="prow${y.year===now?' cur':''}${y.warn?' warn':''}"><div class="pgz">${y.gz}<div style="font-size:10px;color:var(--dim);font-weight:400">${y.ko}</div></div>
-      <div class="pmain"><div class="pt2">${y.year}년${y.year===now?' · <b style="color:var(--gold)">올해</b>':''}</div>${y.god}${toneTag(y.tone)} — ${y.text.replace(/^[^—]*—\s*/,'')}</div></div>`; });
+    let saeun='<div class="card"><h3>📈 향후 10년 세운</h3>'
+      +'<p class="cardguide">세운(歲運)은 해마다 바뀌는 그 해의 기운이에요. 대운이 “계절”이라면 세운은 “그 해의 날씨” — 같은 계절이라도 해마다 날씨가 다르듯, 아래 흐름을 참고해 한 해의 계획을 잡아주세요.</p><div class="plist">';
+    sl.forEach(y=>{ saeun+=luckRow(`${y.year}년${y.year===now?' · <b style="color:var(--gold)">올해</b>':''}`, y, y.year===now); });
     saeun+='</div></div>';
     let caution=''; if(warns.length) caution=`<div class="card"><h3>⚠️ 조심해야 할 시기</h3><div class="cautionbox"><b>${warns.join('</b>, <b>')}</b><br><span style="color:var(--dim);font-size:12px">— 변동·구설·과로·관재 주의. 큰 결정·계약·건강 재점검. (참고용)</span></div></div>`;
     luckCards=daeun+months+saeun+caution;
@@ -442,13 +483,14 @@ function renderDetail(a){
 
   d.innerHTML=`
   <div class="mocknote">📌 검토용 템플릿입니다. 사주 8자·오행·십신·운 점수는 만세력 엔진으로 자동 계산되고, 아래 [상담 작성란]은 상담사가 직접 채우는 영역입니다.</div>
+  <div class="printbar"><button onclick="window.print()">🖨 이 풀이 인쇄하기</button></div>
 
   <div class="card"><h3>👤 신청자 정보 ${dupCard}</h3>
     <div class="kv">
       <div><b>이름</b>${a.name||'-'}</div><div><b>성별</b>${a.sex==='female'?'여성':'남성'}</div>
       <div><b>연락처</b>${a.phone||'-'}</div><div><b>고민</b>${a.concern||'-'}</div>
       <div><b>생년월일</b>${cal} ${a.y}.${a.mo}.${a.d}</div><div><b>태어난 시</b>${hourTxt}</div>
-      <div><b>양력환산</b>${s.solarStr||'-'}</div><div><b>신청일</b>${a.createdAt||'-'}</div>
+      <div><b>양력환산</b>${s.solarStr||'-'}</div><div><b>신청일</b>${fmtWhen(a.createdAt)}</div>
     </div></div>
 
   <div class="card resv"><h3>📅 예약 관리</h3>
@@ -470,7 +512,9 @@ function renderDetail(a){
   </div>
 
   <div class="card"><h3>🀄 사주 8글자 (四柱八字)</h3>
-    <div class="pillars">${pillarCells}</div></div>
+    <p class="cardguide">사주팔자는 태어난 년·월·일·시를 하늘의 기운(천간) 4글자 + 땅의 기운(지지) 4글자, 총 8글자로 적은 것이에요. 각 기둥(柱)은 인생의 시기와 관계 영역을 하나씩 담당합니다. 아래에 글자 하나하나의 뜻을 풀었으니 그대로 읽어주시면 됩니다.</p>
+    <div class="pillars">${pillarCells}</div>
+    <div class="pdetail">${pillarExplain}</div></div>
 
   <div class="card pers-card"><h3>🌟 성향 핵심 분석</h3>${persInner}</div>
 
@@ -481,7 +525,9 @@ function renderDetail(a){
   <div class="card"><h3>🌳 오행 분포</h3><table>${ohRows}</table>
     <p class="interp" style="margin-top:12px">${C.describe.balance(s)}</p></div>
 
-  <div class="card"><h3>🔟 십신(十神) 분포</h3><table>${tgRows}</table></div>
+  <div class="card"><h3>🔟 십신(十神) 분포</h3>
+    <p class="cardguide">십신(十神)은 여덟 글자가 나(일간)와 맺는 관계를 10가지로 분류한 것 — 사주 해석의 핵심 도구예요. 개수가 많은 별일수록 인생에서 그 영역의 기운이 강하게 작동한다고 읽습니다.</p>
+    <table>${tgRows}</table></div>
 
   <div class="card"><h3>🎯 운(運) 점수 & 해석</h3>
     <div class="score">

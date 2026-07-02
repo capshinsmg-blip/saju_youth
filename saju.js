@@ -63,6 +63,39 @@
     편재:'유동 재물·사업·사교', 정재:'고정 재물·성실', 편관:'압박·도전·권력', 정관:'명예·직장·규율',
     편인:'독창·눈치·고독', 정인:'보호·학문·문서'
   };
+  /* 십신 상세 해설 — 결과지(상담사용)에 그대로 읽어줄 수 있는 수준의 풀이 */
+  const SHISHEN_DETAIL={
+    비견:{ mean:'나와 같은 오행·같은 음양의 기운. ‘또 하나의 나’ — 형제·친구·동료·경쟁자의 별',
+      period:'자립심과 독립심이 강해지고, 내 곁에 사람(친구·동료)이 모이는 시기예요. 내 힘으로 뭔가를 시작하고 싶어져 독립·이직·창업 욕구가 올라옵니다. 다만 ‘나와 똑같은 사람’이 늘어나는 만큼 경쟁도 커지고, 돈은 나눠 쓰게 되어 지출이 함께 늘 수 있어요.',
+      advice:'새로운 시작·운동·자기계발에는 아주 좋은 때예요. 대신 동업·돈 거래는 아무리 가까운 사이라도 반드시 문서로 남기세요.'},
+    겁재:{ mean:'나와 같은 오행이지만 음양이 다른 기운. 이름 그대로 ‘재물(財)을 겁탈(劫)한다’ — 경쟁·승부·재물 변동의 별',
+      period:'승부욕과 추진력이 확 올라와 평소보다 과감해지는 시기예요. 그만큼 충동 지출·투자 손실·금전 다툼이 생기기 쉽고, 주변에서 돈 얘기(투자 권유·빌려달라는 부탁)를 꺼내는 사람도 늘어납니다.',
+      advice:'보증·큰 투자·한탕성 지출은 피하고, 넘치는 승부욕은 일과 운동으로 푸세요. 수입이 생기면 먼저 떼어 저축하는 습관이 이 시기를 지켜줍니다.'},
+    식신:{ mean:'내가 생(生)해주는 기운 중 음양이 같은 것. 먹을 복·표현·재능·여유의 별',
+      period:'의식주가 안정되고 표현력과 아이디어가 살아나는, 십신 중 가장 ‘풍요로운’ 시기예요. 하고 싶은 일이 생기고 즐기면서 하는 일에서 성과가 납니다. 건강운·식복도 따르는 편이에요.',
+      advice:'배우던 것·만들던 것을 세상에 내놓기 좋은 때예요. 다만 몸도 마음도 편해지는 기운이라 나태해지거나 체중이 늘 수 있으니 생활 리듬만 지켜주세요.'},
+    상관:{ mean:'내가 생해주는 기운 중 음양이 다른 것. ‘정관(직장·규율)을 상(傷)하게 한다’ — 끼·언변·창의력이 폭발하지만 구설도 따르는 별',
+      period:'재능·말솜씨·아이디어가 번뜩이고 사람들의 주목을 받는 시기예요. 대신 그만큼 말로 인한 구설, 윗사람·조직과의 마찰, 규칙에 답답함을 느끼는 일이 생기기 쉽습니다.',
+      advice:'창작·발표·마케팅·콘텐츠에는 최고의 시기예요. 대신 SNS와 말 한마디를 아끼고, 계약서·규정 관련은 평소보다 꼼꼼히 확인하세요.'},
+    편재:{ mean:'내가 극(剋)하는 기운 중 음양이 같은 것. 유동 재물 — 사업·투자·인맥을 타고 도는 큰돈의 별',
+      period:'돈의 흐름이 커지고 기회가 여러 갈래로 들어오는 활동적인 시기예요. 만나는 사람이 많아지고 씀씀이도 커집니다. 들어오는 만큼 나가기도 하는 ‘큰 물’의 기운이라, 흐름을 잘 타면 자산이 불어나는 때예요.',
+      advice:'영업·사업 확장·부업 시도에 좋은 때예요. 단 한탕을 노리면 오히려 새나갑니다. 수익의 일부는 반드시 고정 자산(저축·적금)으로 옮겨두세요.'},
+    정재:{ mean:'내가 극하는 기운 중 음양이 다른 것. 고정 재물 — 월급·저축처럼 성실하게 쌓이는 돈의 별 (남성에겐 배우자·이성의 별이기도)',
+      period:'성실함이 그대로 결실로 돌아오는 안정적인 시기예요. 수입이 규칙적으로 자리 잡고, 재테크·내집마련 같은 착실한 계획이 잘 풀립니다. 남성이라면 좋은 이성·배우자 인연이 들어오는 때로도 봅니다.',
+      advice:'적금·청약·장기 플랜을 시작하기 좋은 때예요. 큰 모험보다 꾸준함이 답이고, 지금 쌓는 신용이 다음 10년의 밑천이 됩니다.'},
+    편관:{ mean:'나를 극하는 기운 중 음양이 같은 것. 칠살(七殺)이라고도 부르는 강한 압박·시련·권력의 별',
+      period:'일·책임·압박이 한꺼번에 몰려오는 시기예요. 과로로 몸이 축나기 쉽고 사건·사고·관재(법적 시비)도 조심해야 합니다. 하지만 편관은 ‘시련이자 권력’의 별 — 이 시기를 잘 버텨낸 사람은 승진·발탁처럼 크게 도약하는 것도 특징이에요.',
+      advice:'건강검진과 과로 관리가 최우선이에요. 서류·법규 관련은 두 번 확인하고, 힘들 때 혼자 버티지 말고 도움을 청하세요. 버티면 도약이 따라옵니다.'},
+    정관:{ mean:'나를 극하는 기운 중 음양이 다른 것. 명예·직장·규율 — 사회가 나를 인정해주는 별 (여성에겐 배우자·이성의 별이기도)',
+      period:'승진·합격·취업·명예 등 사회적 위치가 올라가는 시기예요. 책임은 늘지만 그만큼 인정받고, 주변에서 ‘믿을 만한 사람’으로 자리 잡습니다. 여성이라면 좋은 이성·배우자 인연이 들어오는 때로도 봅니다.',
+      advice:'시험·승진·이직 도전에 유리한 때예요. 규칙을 지키는 모습 자체가 운이 되는 시기이니, 무리한 편법·지름길은 금물입니다.'},
+    편인:{ mean:'나를 생해주는 기운 중 음양이 같은 것. 직관·독창성·정신세계의 별 — 깊어지지만 외로워질 수 있는 기운',
+      period:'생각이 깊어지고 공부·연구·정신적인 관심사에 빠져드는 시기예요. 직관이 날카로워지고 남들과 다른 발상이 나옵니다. 대신 혼자만의 세계에 갇혀 고립감·변덕·의욕 기복이 올 수 있고, 입맛·건강 리듬이 흔들리기도 해요.',
+      advice:'자격증·전문 공부·내공 쌓기에는 최적의 시기예요. 단 사람과의 연결을 놓지 말고, 생각이 많아질수록 몸을 움직여 주세요.'},
+    정인:{ mean:'나를 생해주는 기운 중 음양이 다른 것. 어머니처럼 나를 보호하는 별 — 학문·문서·귀인·자격의 기운',
+      period:'배움·문서·자격·계약에 좋은 소식이 들어오고, 귀인의 도움이 닿는 시기예요. 마음이 안정되고 실수해도 감싸주는 사람이 나타나는, 한마디로 ‘보호받는’ 때입니다.',
+      advice:'공부·자격증·부동산 계약·문서 관련 일을 진행하기 좋은 때예요. 받은 도움은 기억해 두었다가 돌려주면 인덕이 계속 이어집니다.'}
+  };
   const GOOD=new Set(['정관','정재','정인','식신','편재']);
   const CAUTION=new Set(['편관','상관','겁재','편인']);
 
@@ -211,7 +244,9 @@
     let text = `${god} 기운 — ${SHISHEN_SHORT[god]} 시기.`;
     if(chung) text += ' 일지와 충(沖)이 들어 이동·변동·관계 변화가 큰 해이니 신중하게.';
     const warn = t.c==='warn' || chung;
-    return {god, tone:t, chung, text, warn};
+    const D=SHISHEN_DETAIL[god]||{};
+    const chungNote = chung ? `여기에 지지 ${gz[1]}(${ZHI_KO[gz[1]]})가 일지 ${s.dayZhi}(${ZHI_KO[s.dayZhi]})와 충(沖)을 이룹니다. 충은 ‘부딪혀 흔들린다’는 뜻으로, 이사·이직·이동이나 관계의 재편처럼 자리가 바뀌는 변화가 생기기 쉬운 신호예요. 나쁜 것만은 아니지만 큰 결정·계약은 한 번 더 점검하고 움직이는 게 좋습니다.` : '';
+    return {god, tone:t, chung, text, warn, mean:D.mean||'', period:D.period||'', advice:D.advice||'', chungNote};
   }
   function daeunList(s){ if(!s.luck) return []; return s.luck.daeun.map(d=>{ const i=periodInfo(s,d.gz);
     return {age:`${d.startAge}~${d.endAge}세`, years:`${d.startYear}~${d.endYear}`, gz:d.gz, ko:gz2ko(d.gz), ...i}; }); }
@@ -225,6 +260,32 @@
     return out;
   }
   function curDaeun(s){ if(!s.luck) return null; const now=s.luck.nowY; const d=s.luck.daeun.find(x=>now>=x.startYear&&now<=x.endYear); if(!d) return null; const i=periodInfo(s,d.gz); return {age:`${d.startAge}~${d.endAge}세`, years:`${d.startYear}~${d.endYear}`, gz:d.gz, ko:gz2ko(d.gz), ...i}; }
+
+  /* ===== 팔자 8글자 — 기둥(주)별 상세 풀이 (입문 상담사도 그대로 읽어줄 수 있게) ===== */
+  const PILLAR_HINT={
+    년:'어린 시절의 환경과 집안의 분위기, 사회에 첫발을 디딜 때 어떤 기운을 업고 출발했는지를 이 자리에서 읽습니다.',
+    월:'직업·사회생활의 무대이자 부모·형제와의 관계를 읽는 핵심 자리예요. 특히 월지는 태어난 계절을 담아 사주 전체의 온도를 정하는, 여덟 글자 중 가장 힘이 센 글자입니다.',
+    시:'자녀운과 말년의 결실, 그리고 인생이 최종적으로 향하는 모습을 읽는 자리입니다.'
+  };
+  function pillarsDetail(s){
+    return s.pillars.map(p=>{
+      const m=PILLAR_MEAN[p.lab];
+      const head=`${p.lab}주 — ${m.role} · ${m.age}`;
+      if(!p.gan) return {lab:p.lab, gz:'', ko:'', head,
+        text:'태어난 시간을 몰라 시주는 계산에서 제외했어요. 시주는 자녀운·말년의 결실을 보는 자리인데, 나머지 여섯 글자만으로도 타고난 성향과 운의 큰 흐름은 충분히 읽을 수 있습니다.'};
+      const ge=GAN_EL[p.gan], ze=ZHI_EL[p.zhi];
+      const base=`천간 ${p.gan}(${GAN_KO[p.gan]})은 ${EL_HAN[ge]}(${ge}) — ${EL_DESC[ge]}의 기운, 지지 ${p.zhi}(${ZHI_KO[p.zhi]})는 ${EL_HAN[ze]}(${ze}) — ${EL_DESC[ze]}의 기운입니다. `;
+      let text;
+      if(p.lab==='일'){
+        const godZ=ten10(s.dayGan, ZHI_MAIN[p.zhi]);
+        text=`${base}천간 ${p.gan}은 이 사주의 주인공인 <b>일간(나 자신)</b> — ‘${ILGAN[p.gan].nick}’ 유형이에요(구체적 성향은 성향 핵심 분석 참고). 지지 ${p.zhi}는 <b>배우자 자리</b>로, 그 속의 중심 기운이 ${godZ}(${SHISHEN_MEAN[godZ]})에 해당해 배우자·가정 영역에 ${SHISHEN_MEAN[godZ]}의 색이 흐른다고 읽습니다.`;
+      } else {
+        const godG=ten10(s.dayGan,p.gan), godZ=ten10(s.dayGan, ZHI_MAIN[p.zhi]);
+        text=`${base}나(일간 ${s.dayGan})를 기준으로 천간 ${p.gan}은 <b>${godG}</b>(${SHISHEN_MEAN[godG]}), 지지 ${p.zhi}의 중심 기운은 <b>${godZ}</b>(${SHISHEN_MEAN[godZ]})에 해당해요. ${PILLAR_HINT[p.lab]}`;
+      }
+      return {lab:p.lab, gz:p.gan+p.zhi, ko:GAN_KO[p.gan]+ZHI_KO[p.zhi], head, text};
+    });
+  }
 
   /* ===== 관심분야(고민) 맞춤 풀이 ===== */
   const CONCERN_HEALTH={
@@ -278,6 +339,6 @@
   global.SAJU={
     GAN_KO,ZHI_KO,GAN_EL,ZHI_EL,EL_HAN,EL_COLOR,EL_DESC,ILGAN,PILLAR_MEAN,REC,TENGOD_MEAN,SHISHEN_MEAN,
     compute, grade, ten10,
-    describe:{ money, love, ilgan, balance, personality, daeunList, saeunList, wolunList, cautions, curDaeun, concern }
+    describe:{ money, love, ilgan, balance, personality, daeunList, saeunList, wolunList, cautions, curDaeun, concern, pillarsDetail }
   };
 })(typeof window!=='undefined'?window:globalThis);
