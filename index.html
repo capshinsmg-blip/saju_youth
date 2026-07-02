@@ -94,6 +94,7 @@
 
   .card{background:var(--card); border:1px solid var(--line); border-radius:18px; padding:20px; margin-bottom:16px; animation:pop .5s both;}
   .card h3{font-size:13px; color:var(--gold-2); letter-spacing:.04em; margin-bottom:16px; display:flex; align-items:center; gap:7px;}
+  .card h3::after{content:''; flex:1; height:1px; background:linear-gradient(90deg,rgba(230,201,138,.28),transparent);}
 
   .gauge{margin-bottom:8px;}
   .gauge .top{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px;}
@@ -131,6 +132,13 @@
   .explist .ei .h small{color:var(--ink-dim); font-weight:400; font-size:12px; margin-left:6px;}
 
   .pers-card{border-color:rgba(230,201,138,.4); background:rgba(230,201,138,.06);}
+  /* 해설지 일간 히어로 */
+  .ehero{text-align:center; margin:4px 0 20px; animation:pop .5s both;}
+  .ehero-char{width:96px; height:96px; margin:0 auto 12px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    font-family:'Noto Serif KR',serif; font-weight:900; font-size:48px; border:2px solid rgba(230,201,138,.55);
+    box-shadow:0 0 34px rgba(230,201,138,.2), inset 0 0 20px rgba(230,201,138,.08); background:rgba(255,255,255,.03);}
+  .ehero-nick{font-family:'Noto Serif KR',serif; font-size:19px; font-weight:700; color:var(--gold);}
+  .ehero-sub{font-size:12px; color:var(--ink-dim); margin-top:4px;}
   .pers-head{font-family:'Noto Serif KR',serif; font-weight:700; font-size:21px; color:var(--gold); margin-bottom:10px;}
   .pers-essence{font-size:14.5px; line-height:1.85; margin-bottom:16px;}
   .pblock{margin-bottom:13px;} .pblock .pt{font-size:13px; color:var(--gold-2); margin-bottom:4px;}
@@ -152,20 +160,38 @@
   .cta{margin-top:8px; padding-top:8px; display:flex; flex-direction:column; gap:10px;}
   .locked2{border-style:solid; border-color:rgba(230,201,138,.4); background:rgba(230,201,138,.05);}
   .locked2 ul{filter:none; opacity:.92;}
-  /* 공유 카드 (오프스크린) */
-  #share-card{position:fixed; left:-9999px; top:0; width:480px; padding:48px 40px; box-sizing:border-box; text-align:center;
+  /* 공유 카드 (오프스크린) — 일간 + 오행 밸런스 + @태그 + 무료조회 CTA */
+  #share-card{position:fixed; left:-9999px; top:0; width:480px; padding:44px 40px 38px; box-sizing:border-box; text-align:center;
     background:linear-gradient(160deg,#0b0b12,#16121f 55%,#1d1730); border:1px solid rgba(230,201,138,.3); color:#f4f1ea; font-family:'Noto Sans KR',sans-serif;}
-  #share-card .sc-brand{font-family:'Noto Serif KR',serif; color:#c8a96a; letter-spacing:.18em; font-size:15px; margin-bottom:30px;}
-  #share-card .sc-il{font-family:'Noto Serif KR',serif; font-weight:900; font-size:96px; line-height:1; margin-bottom:12px;}
-  #share-card .sc-iltxt{font-size:18px; color:#e6c98a; font-weight:700; margin-bottom:8px;}
-  #share-card .sc-name{font-family:'Noto Serif KR',serif; font-weight:700; font-size:23px; margin-bottom:30px;}
-  #share-card .sc-scores{display:flex; gap:18px; margin-bottom:28px;}
-  #share-card .sc-s{flex:1; background:rgba(255,255,255,.05); border:1px solid rgba(230,201,138,.22); border-radius:18px; padding:22px 8px;}
-  #share-card .sc-s .scv{font-family:'Noto Serif KR',serif; font-weight:900; font-size:42px; line-height:1;}
-  #share-card .sc-s .sck{font-size:15px; color:#a8a3b5; margin-top:8px;}
-  #share-card .sc-line{font-size:16px; line-height:1.7; margin-bottom:20px;}
-  #share-card .sc-rec{display:inline-block; font-size:14px; color:#e6c98a; border:1px solid rgba(230,201,138,.3); border-radius:99px; padding:10px 20px; margin-bottom:36px;}
-  #share-card .sc-foot{font-family:'Noto Serif KR',serif; font-size:15px; color:#c8a96a; border-top:1px solid rgba(230,201,138,.2); padding-top:24px;}
+  #share-card .sc-brand{font-family:'Noto Serif KR',serif; color:#c8a96a; letter-spacing:.18em; font-size:15px; margin-bottom:28px;}
+  #share-card .sc-il{width:118px; height:118px; margin:0 auto 14px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    font-family:'Noto Serif KR',serif; font-weight:900; font-size:62px; line-height:1; border:2px solid rgba(230,201,138,.5);
+    box-shadow:0 0 40px rgba(230,201,138,.22), inset 0 0 22px rgba(230,201,138,.08); background:rgba(255,255,255,.04);}
+  #share-card .sc-iltxt{font-size:19px; color:#e6c98a; font-weight:700; margin-bottom:6px;}
+  #share-card .sc-name{font-family:'Noto Serif KR',serif; font-weight:700; font-size:22px; margin-bottom:26px;}
+  #share-card .sc-ohtitle{font-size:13px; color:#a8a3b5; letter-spacing:.14em; margin-bottom:14px;}
+  #share-card .sc-oh{margin-bottom:24px; text-align:left;}
+  #share-card .sc-oh .r{display:flex; align-items:center; gap:11px; margin-bottom:10px;}
+  #share-card .sc-oh .r:last-child{margin-bottom:0;}
+  #share-card .sc-oh .d{width:27px; height:27px; border-radius:50%; font-family:'Noto Serif KR',serif; font-weight:700; font-size:14px; color:#11101a; text-align:center; line-height:27px; flex:none;}
+  #share-card .sc-oh .t{flex:1; height:11px; background:rgba(255,255,255,.08); border-radius:99px; overflow:hidden;}
+  #share-card .sc-oh .t i{display:block; height:100%; border-radius:99px;}
+  #share-card .sc-oh .c{width:22px; font-size:14px; color:#a8a3b5; text-align:right; flex:none;}
+  #share-card .sc-line{font-size:15.5px; line-height:1.7; margin-bottom:26px; color:#d9d4c9;}
+  #share-card .sc-foot{border-top:1px solid rgba(230,201,138,.22); padding-top:22px; font-size:17px;}
+  #share-card .sc-foot b{font-family:'Noto Serif KR',serif; color:#e6c98a; font-size:19px;}
+  #share-card .sc-cta{margin-top:8px; font-size:14px; color:#c8a96a;}
+  /* 공유 모달 (이미지 미리보기 + 공유 방식 선택) */
+  #share-modal{position:fixed; inset:0; z-index:50; display:flex; align-items:center; justify-content:center; padding:20px;}
+  #share-modal[hidden]{display:none;}
+  #share-modal .sm-back{position:absolute; inset:0; background:rgba(5,4,10,.78); backdrop-filter:blur(4px);}
+  #share-modal .sm-box{position:relative; width:100%; max-width:360px; max-height:92vh; overflow-y:auto; background:var(--card,#16131f); border:1px solid rgba(230,201,138,.35); border-radius:20px; padding:20px; text-align:center; animation:pop .3s both;}
+  #share-modal .sm-title{font-family:'Noto Serif KR',serif; font-size:16px; font-weight:700; color:var(--gold); margin-bottom:12px;}
+  #share-modal img{width:78%; max-width:240px; border-radius:12px; border:1px solid rgba(230,201,138,.25); margin-bottom:14px;}
+  #share-modal .sm-btns{display:flex; flex-direction:column; gap:8px;}
+  #share-modal .sm-btns .btn{padding:13px 16px; font-size:14.5px; border-radius:13px;}
+  #share-modal .sm-hint{font-size:11.5px; color:var(--ink-dim); margin-top:10px; line-height:1.6;}
+  #share-modal .sm-close{position:absolute; top:10px; right:12px; background:none; border:none; color:var(--ink-dim); font-size:18px; cursor:pointer; padding:6px;}
   .foot{font-size:11px; color:var(--ink-dim); text-align:center; margin-top:18px; line-height:1.7;}
   .foot a{color:var(--gold-dim);}
 </style>
@@ -298,6 +324,13 @@
     <div class="tag" style="align-self:center;background:rgba(230,201,138,.1)">📜 상세 해설지</div>
     <div class="brand" id="e-hello" style="margin-bottom:16px;">상세 해설지</div>
 
+    <!-- 일간 히어로 -->
+    <div class="ehero">
+      <div class="ehero-char" id="e-hchar">木</div>
+      <div class="ehero-nick" id="e-hnick"></div>
+      <div class="ehero-sub" id="e-hsub"></div>
+    </div>
+
     <!-- 성향: 메인 -->
     <div class="card pers-card"><h3>🌟 나의 성향 — 핵심 분석</h3>
       <div id="e-pers"></div></div>
@@ -307,7 +340,6 @@
       <div class="explist" id="e-pillar-list"></div></div>
 
     <div class="card"><h3>⚖️ 오행 균형 해석</h3><p class="interp" id="e-balance"></p></div>
-    <div class="card"><h3>🔟 십신(十神) 요약</h3><div class="explist" id="e-tengod"></div></div>
     <div class="card"><h3>💰 금전운 상세</h3><p class="interp" id="e-money"></p></div>
     <div class="card"><h3>💕 연애운 상세</h3><p class="interp" id="e-love"></p></div>
     <div class="card"><h3>🍀 나만의 개운 가이드</h3><p class="interp" id="e-luck"></p></div>
@@ -364,17 +396,31 @@
 
 <!-- 공유용 이미지 카드 (화면 밖에서 렌더 → 캡처) -->
 <div id="share-card">
-  <div class="sc-brand" id="sc-brand">사주 오행 공방 · 무료 3초 진단</div>
+  <div class="sc-brand" id="sc-brand">사주 오행 공방</div>
   <div class="sc-il" id="sc-il">木</div>
   <div class="sc-iltxt" id="sc-iltxt">갑목 · 큰 나무</div>
   <div class="sc-name" id="sc-name">OO님의 사주</div>
-  <div class="sc-scores">
-    <div class="sc-s"><div class="scv" id="sc-money" style="color:#d8b13f">0%</div><div class="sck">💰 금전운</div></div>
-    <div class="sc-s"><div class="scv" id="sc-love" style="color:#e0625c">0%</div><div class="sck">💕 연애운</div></div>
-  </div>
+  <div class="sc-ohtitle">— 나의 오행 밸런스 —</div>
+  <div class="sc-oh" id="sc-oh"></div>
   <div class="sc-line" id="sc-sum">한 줄 성향</div>
-  <div class="sc-rec" id="sc-rec">행운의 색 · 추천 원석</div>
-  <div class="sc-foot" id="sc-foot">@saju_youth · 나도 3초 무료 진단 →</div>
+  <div class="sc-foot"><b id="sc-ig">@susu.oheng</b>
+    <div class="sc-cta">무료사주 3초 조회 ✨</div></div>
+</div>
+
+<!-- 공유 모달: 이미지 미리보기 + 공유 방식 선택 -->
+<div id="share-modal" hidden>
+  <div class="sm-back" onclick="closeShare()"></div>
+  <div class="sm-box">
+    <button class="sm-close" onclick="closeShare()">✕</button>
+    <div class="sm-title">📸 결과 이미지가 준비됐어요</div>
+    <img id="sm-img" alt="공유 이미지 미리보기" />
+    <div class="sm-btns">
+      <button class="btn btn-ig" id="sm-share">📤 공유하기 — 인스타 스토리·DM</button>
+      <button class="btn btn-gold" id="sm-save">💾 이미지 저장하기</button>
+      <button class="btn btn-ghost" id="sm-link">🔗 진단 링크 복사</button>
+    </div>
+    <p class="sm-hint" id="sm-hint">공유하기 → Instagram 선택 → 스토리 또는 DM으로 보낼 수 있어요.</p>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1.7.4/lunar.js"></script>
@@ -387,8 +433,8 @@
 /* ===== 설정 (실제 운영값으로 교체) ===== */
 const CONFIG = {
   brandName:"사주 오행 공방",
-  instagram:"@saju_youth",                  // TODO 실제 핸들
-  instagramUrl:"https://instagram.com/",     // TODO 실제 URL
+  instagram:"@susu.oheng",
+  instagramUrl:"https://www.instagram.com/susu.oheng/",
   reserveUrl:"#",                            // TODO 예약폼 링크
   shareUrl:"https://capshinsmg-blip.github.io/saju_youth/", // 친구 공유 시 유입될 진단 페이지(배포 주소). 비우면 현재 주소 자동 사용
 };
@@ -439,7 +485,7 @@ function pillarsHTML(container,pillars){
 
 function render(){
   go('result'); $('r-body').style.display='none'; $('r-load').style.display='flex';
-  $('cta-ig').onclick=()=>{ window.open(CONFIG.instagramUrl,'_blank'); renderExplain(); go('explain'); };
+  $('cta-ig').onclick=igFollowFlow;
   $('cta-reserve').onclick=reserve; $('e-reserve').onclick=reserve;
 
   setTimeout(()=>{
@@ -470,6 +516,19 @@ function render(){
     $('r-color').textContent=C.REC[s.lack].color; $('r-stone').textContent=C.REC[s.lack].stone; $('r-dir').textContent=C.REC[s.lack].dir;
     window.scrollTo(0,0);
   },1400);
+}
+
+/* 인스타 팔로우 게이트: 1클릭=인스타 열기, 돌아와서 한 번 더 눌러야 해설지 */
+let IG_CLICKED=false;
+function igFollowFlow(){
+  const btn=$('cta-ig');
+  if(!IG_CLICKED){
+    window.open(CONFIG.instagramUrl,'_blank');
+    IG_CLICKED=true;
+    btn.textContent='팔로우 완료! 해설지 열기 ✅';
+    return;
+  }
+  renderExplain(); go('explain');
 }
 
 function gradeChip(v){ const g=SAJU.grade(v);
@@ -517,11 +576,17 @@ function renderExplain(){
   const {s,name}=LAST, C=SAJU, who=name?name+'님':'당신';
   $('e-hello').textContent=who+'의 상세 해설지';
 
-  // 성향 (메인)
+  // 일간 히어로
+  const g0=C.ILGAN[s.dayGan];
+  $('e-hchar').textContent=C.EL_HAN[s.dayEl]; $('e-hchar').style.color=C.EL_COLOR[s.dayEl];
+  $('e-hnick').textContent=`${s.dayGan}(${C.GAN_KO[s.dayGan]}) — ${g0.nick}`;
+  $('e-hsub').textContent=who+'의 타고난 본질';
+
+  // 성향 (라이트) — 강점·보완점까지만. 심층 기질·기운의 강약·일/연애 스타일은 예약 시 공개
   const p=C.describe.personality(s);
+  const LITE=new Set(['💪 강점','⚠️ 약점·보완점']);
   let pers=`<div class="pers-head">${p.head}</div><div class="pers-essence">${p.essence}</div>`;
-  p.blocks.forEach(b=>{ pers+=`<div class="pblock"><div class="pt">${b.t}</div><div class="pv">${b.v}</div></div>`; });
-  pers+=`<div class="pers-sum">${p.summary}</div>`;
+  p.blocks.filter(b=>LITE.has(b.t)).forEach(b=>{ pers+=`<div class="pblock"><div class="pt">${b.t}</div><div class="pv">${b.v}</div></div>`; });
   $('e-pers').innerHTML=pers;
 
   // 8글자
@@ -534,26 +599,25 @@ function renderExplain(){
     } else ei.innerHTML=`<div class="h">${pp.lab}주 <small>${m.role} · ${m.age}</small></div>태어난 시간을 모르면 시주는 제외돼요.`;
     pl.appendChild(ei); });
 
-  // 대운/월운/세운/조심 — 2차 잠금(예약 시 공개)
+  // 심층 성향 + 운세 — 2차 잠금(예약 시 공개)
   const yy = s.luck ? s.luck.nowY : '';
   $('e-luck-sections').innerHTML=`
     <div class="card locked locked2"><div class="lk">🔒</div>
-      <h4>올해 & 향후 10년 상세 운세</h4>
+      <h4>${who}의 심층 풀이</h4>
       <ul>
+        <li>🔑 숨겨진 기질 · 기운의 강약(신강/신약)</li>
+        <li>💼 나에게 맞는 일 · 연애 스타일</li>
+        <li>🔟 십신(十神)으로 보는 정밀 분석</li>
         <li>📅 올해(${yy}년) 1~12월 월별 운세</li>
         <li>🧭 향후 10년 대운(大運)의 큰 흐름</li>
         <li>📈 연도별 세운 &amp; ⚠️ 조심해야 할 시기</li>
       </ul>
       <div class="seal">— 예약하면 전문 상담사가 직접 풀어 전체 공개해드려요 —</div>
-      <button class="btn btn-gold" id="e-unlock" style="margin-top:14px;">🔓 예약하고 상세 운세 받기</button>
+      <button class="btn btn-gold" id="e-unlock" style="margin-top:14px;">🔓 예약하고 심층 풀이 받기</button>
     </div>`;
   $('e-unlock').onclick=reserve;
 
   $('e-balance').innerHTML=C.describe.balance(s)+` 오행은 같은 글자가 많을수록 그 기운이 강하고, 0개면 그 분야를 의식적으로 보완하면 좋아요.`;
-
-  const tg=$('e-tengod'); tg.innerHTML='';
-  Object.keys(s.tg).forEach(k=>{ const ei=document.createElement('div'); ei.className='ei';
-    ei.innerHTML=`<div class="h">${k} · ${s.tg[k]}개</div>${C.TENGOD_MEAN[k]}`; tg.appendChild(ei); });
 
   const m=C.describe.money(s), l=C.describe.love(s);
   $('e-money').innerHTML=gradeChip(s.money)+' '+m.body;
@@ -651,25 +715,33 @@ async function submitApply(btn){
 }
 
 function fillShareCard(){
-  if(!LAST) return; const {s,name}=LAST, C=SAJU, who=name?name+'님':'내';
+  if(!LAST) return; const {s,name}=LAST, C=SAJU, who=name?name+'님의':'나의';
   const g=C.ILGAN[s.dayGan], nick=g.nick.replace(/\s*\(.*\)/,'');
-  $('sc-brand').textContent=CONFIG.brandName+' · 무료 3초 진단';
+  $('sc-brand').textContent=CONFIG.brandName;
   $('sc-il').textContent=C.EL_HAN[s.dayEl]; $('sc-il').style.color=C.EL_COLOR[s.dayEl];
-  $('sc-iltxt').textContent=`${C.GAN_KO[s.dayGan]}${s.dayEl} · ${nick}`;
+  $('sc-iltxt').textContent=`일간 ${s.dayGan}(${C.GAN_KO[s.dayGan]}${s.dayEl}) · ${nick}`;
   $('sc-name').textContent=`${who} 사주 오행 리포트`;
-  $('sc-money').textContent=s.money+'%'; $('sc-love').textContent=s.love+'%';
+  // 오행 밸런스 바 (캡처용 — 애니메이션 없이 즉시 폭 지정)
+  const ohc=$('sc-oh'); ohc.innerHTML='';
+  const maxOh=Math.max(...Object.values(s.oh),1);
+  ['목','화','토','금','수'].forEach(e=>{
+    ohc.insertAdjacentHTML('beforeend',
+      `<div class="r"><div class="d" style="background:${C.EL_COLOR[e]}">${C.EL_HAN[e]}</div>
+       <div class="t"><i style="width:${s.oh[e]/maxOh*100}%;background:${C.EL_COLOR[e]}"></i></div>
+       <div class="c">${s.oh[e]}</div></div>`);
+  });
   $('sc-sum').textContent=`'${nick}' 유형 — ${g.strength.split('.')[0]}.`;
-  const r=C.REC[s.lack]; $('sc-rec').textContent=`행운의 색 ${r.color} · 원석 ${r.stone}`;
-  const link=shareLink().replace(/^https?:\/\//,'');
-  $('sc-foot').textContent=`나도 3초 무료 진단 → ${link}`;
+  $('sc-ig').textContent=CONFIG.instagram;
 }
+function closeShare(){ $('share-modal').hidden=true; }
+let SHARE_FILE=null, SHARE_DATAURL='';
 async function shareResult(){
   if(!LAST) return;
   const url=shareLink();
-  const shareText=`내 사주 연애운·금전운 몇%? 무료 3초 진단 ✨\n${url}`;
+  const shareText=`내 사주 오행 밸런스는? 무료사주 3초 조회 ✨ ${CONFIG.instagram}\n${url}`;
   // html2canvas 미로드 시: 링크 공유 폴백
   if(typeof html2canvas==='undefined'){
-    if(navigator.share) navigator.share({title:CONFIG.brandName,text:'무료 3초 사주 진단 ✨',url}).catch(()=>{});
+    if(navigator.share) navigator.share({title:CONFIG.brandName,text:'무료사주 3초 조회 ✨',url}).catch(()=>{});
     else { navigator.clipboard&&navigator.clipboard.writeText(url); alert('진단 링크가 복사됐어요!\n'+url); }
     return;
   }
@@ -678,21 +750,29 @@ async function shareResult(){
   let canvas;
   try{ canvas=await html2canvas($('share-card'),{scale:2, backgroundColor:'#0b0b12', logging:false, useCORS:true}); }
   catch(e){ alert('이미지 생성에 실패했어요. 잠시 후 다시 시도해주세요.'); return; }
-  const dataUrl=canvas.toDataURL('image/png');
-  try{
-    const blob=await (await fetch(dataUrl)).blob();
-    const file=new File([blob],'사주진단.png',{type:'image/png'});
-    // 이미지 + URL 동시 공유 (친구가 눌러서 2차 유입)
-    if(navigator.canShare && navigator.canShare({files:[file]})){
-      await navigator.share({files:[file], text:shareText, url});
-      return;
-    }
-  }catch(e){ if(e && e.name==='AbortError') return; }
-  // 폴백: 이미지 다운로드 + 링크 클립보드 복사
-  const a=document.createElement('a'); a.href=dataUrl; a.download='사주진단.png';
-  document.body.appendChild(a); a.click(); a.remove();
-  try{ if(navigator.clipboard) await navigator.clipboard.writeText(url); }catch(e){}
-  alert('결과 이미지를 저장했어요! 진단 링크도 복사됐으니 함께 공유해보세요 :)\n'+url);
+  SHARE_DATAURL=canvas.toDataURL('image/png');
+  SHARE_FILE=null;
+  try{ const blob=await (await fetch(SHARE_DATAURL)).blob(); SHARE_FILE=new File([blob],'사주진단.png',{type:'image/png'}); }catch(e){}
+  // 미리보기 모달 — 이미지가 제대로 나왔는지 눈으로 확인하고 공유 방식 선택
+  $('sm-img').src=SHARE_DATAURL;
+  const canFiles = SHARE_FILE && navigator.canShare && navigator.canShare({files:[SHARE_FILE]});
+  $('sm-share').style.display = canFiles ? 'block' : 'none';
+  $('sm-hint').textContent = canFiles
+    ? '공유하기 → Instagram 선택 → 스토리 또는 DM으로 보낼 수 있어요.'
+    : 'PC에서는 이미지를 저장한 뒤 인스타에 올려주세요. 모바일에서 열면 바로 공유돼요.';
+  $('sm-share').onclick=async()=>{
+    try{ await navigator.share({files:[SHARE_FILE], text:shareText}); }
+    catch(e){ if(e && e.name!=='AbortError') alert('공유가 지원되지 않아요. 이미지 저장 후 인스타에 올려주세요!'); }
+  };
+  $('sm-save').onclick=()=>{
+    const a=document.createElement('a'); a.href=SHARE_DATAURL; a.download='사주진단.png';
+    document.body.appendChild(a); a.click(); a.remove();
+  };
+  $('sm-link').onclick=async()=>{
+    try{ await navigator.clipboard.writeText(url); $('sm-link').textContent='✅ 복사 완료!'; setTimeout(()=>{$('sm-link').textContent='🔗 진단 링크 복사';},1600); }
+    catch(e){ alert('링크: '+url); }
+  };
+  $('share-modal').hidden=false;
 }
 
 (function stars(){ const c=document.querySelector('.stars'),x=c.getContext('2d');
