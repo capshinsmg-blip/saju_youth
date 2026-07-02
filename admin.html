@@ -18,7 +18,7 @@
   #login p{color:var(--dim);font-size:13px;text-align:center;line-height:1.6;}
   #login input{width:100%;max-width:320px;background:var(--panel);border:1px solid var(--line);color:var(--ink);font-size:16px;border-radius:12px;padding:14px;}
   #login button{width:100%;max-width:320px;background:linear-gradient(135deg,var(--gold-btn),var(--gold-btn2));color:#241c0a;font-weight:700;border:none;border-radius:12px;padding:15px;font-size:16px;cursor:pointer;}
-  .warn{max-width:320px;font-size:11px;color:#b8721a;border:1px dashed #b8721a55;border-radius:10px;padding:10px;text-align:center;}
+  .loginwarn{max-width:320px;font-size:11px;color:#b8721a;border:1px dashed #b8721a55;border-radius:10px;padding:10px;text-align:center;}
   /* 대시보드 */
   #dash{display:none;}
   .top{position:sticky;top:0;background:rgba(255,255,255,.85);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:14px 18px;display:flex;justify-content:space-between;align-items:center;z-index:5;}
@@ -134,7 +134,7 @@
   <input id="email" type="email" placeholder="관리자 이메일" style="display:none" onkeydown="if(event.key==='Enter')doLogin()" />
   <input id="pw" type="password" placeholder="비밀번호" onkeydown="if(event.key==='Enter')doLogin()" />
   <button onclick="doLogin()">로그인</button>
-  <div class="warn" id="loginNote"></div>
+  <div class="loginwarn" id="loginNote"></div>
 </div>
 
 <div id="dash">
