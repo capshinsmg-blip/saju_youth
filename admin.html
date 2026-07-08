@@ -126,10 +126,35 @@
   .calcell.blocked{background:repeating-linear-gradient(45deg,#c23b320d,#c23b320d 6px,#c23b3218 6px,#c23b3218 12px);border-color:#c23b3255;}
   .calcell .dnum{font-size:12px;color:var(--dim);margin-bottom:4px;display:flex;align-items:center;justify-content:space-between;gap:4px;}
   .calcell .dnum .blkflag{font-size:9px;font-weight:700;color:#c23b32;background:#c23b3218;border-radius:5px;padding:1px 5px;}
+  .calcell .dnum .blkflag.part{color:#a6741a;background:#a6741a18;}
   .calcell.today .dnum{color:var(--gold);font-weight:700;}
   .calcell .blktog{display:block;width:100%;margin-top:5px;border:1px dashed var(--line);background:transparent;color:var(--dim);border-radius:7px;padding:4px 5px;font-size:10.5px;cursor:pointer;font-family:inherit;}
   .calcell .blktog:hover{border-color:#c23b3255;color:#c23b32;}
   .calcell .blktog.on{background:#c23b32;color:#fff;border-style:solid;border-color:#c23b32;}
+  /* 차단 설정 모달 */
+  #blkmodal{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:20px;}
+  #blkmodal[hidden]{display:none;}
+  #blkmodal .bm-back{position:absolute;inset:0;background:rgba(20,15,10,.45);backdrop-filter:blur(3px);}
+  #blkmodal .bm-box{position:relative;width:100%;max-width:360px;max-height:90vh;overflow-y:auto;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:0 20px 60px -20px rgba(0,0,0,.35);}
+  #blkmodal .bm-close{position:absolute;top:10px;right:12px;background:none;border:none;color:var(--dim);font-size:17px;cursor:pointer;padding:6px;}
+  #blkmodal .bm-title{font-family:'Noto Serif KR',serif;font-size:16px;font-weight:700;color:var(--gold2);margin-bottom:14px;}
+  #blkmodal .btn-full{display:block;width:100%;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;}
+  #blkmodal .btn-full.block{background:#c23b32;color:#fff;}
+  #blkmodal .btn-full.unblock{background:var(--panel2);border:1px solid var(--line);color:var(--ink);}
+  #blkmodal .bm-note{font-size:13px;line-height:1.7;color:var(--dim);background:#c23b320f;border:1px solid #c23b3233;border-radius:10px;padding:11px 12px;margin-bottom:12px;}
+  #blkmodal .bm-note b{color:var(--h);}
+  #blkmodal .bm-or{text-align:center;font-size:12px;color:var(--dim);margin:14px 0 10px;}
+  #blkmodal .bm-slots{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;}
+  #blkmodal .bm-slot{display:flex;flex-direction:column;align-items:flex-start;gap:2px;border:1px solid var(--line);border-radius:10px;padding:9px 11px;background:var(--panel2);cursor:pointer;font-family:inherit;}
+  #blkmodal .bm-slot .tt{font-size:13px;font-weight:700;color:var(--ink);}
+  #blkmodal .bm-slot .stt{font-size:11px;color:var(--dim);}
+  #blkmodal .bm-slot.open{border-style:dashed;}
+  #blkmodal .bm-slot.open:hover{border-color:#c23b3255;}
+  #blkmodal .bm-slot.blk{background:#c23b3218;border-color:#c23b32;}
+  #blkmodal .bm-slot.blk .tt,#blkmodal .bm-slot.blk .stt{color:#c23b32;}
+  #blkmodal .bm-slot.res{opacity:.6;cursor:default;background:rgba(230,201,138,.14);border-color:var(--gold2);}
+  #blkmodal .bm-slot.res .stt{color:var(--gold2);}
+  #blkmodal .bm-hint{font-size:11.5px;color:var(--dim);line-height:1.6;margin-top:12px;}
   .calcell .bk{display:block;width:100%;text-align:left;border:none;border-radius:7px;padding:5px 6px;margin-top:3px;font-size:11px;line-height:1.35;cursor:pointer;font-family:inherit;}
   .calcell .bk.active{background:rgba(230,201,138,.16);color:var(--gold);}
   .calcell .bk.cancelled{background:rgba(156,151,168,.16);color:var(--dim);text-decoration:line-through;}
@@ -243,6 +268,16 @@
   </div>
 </div>
 
+<!-- 날짜별 차단 설정 모달 -->
+<div id="blkmodal" hidden>
+  <div class="bm-back" onclick="closeSlotModal()"></div>
+  <div class="bm-box">
+    <button class="bm-close" onclick="closeSlotModal()">✕</button>
+    <div class="bm-title" id="bm-title">예약 차단 설정</div>
+    <div id="bm-body"></div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1.7.4/lunar.js"></script>
 <script src="saju.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -284,7 +319,8 @@ const slotLabel=t=> t ? (t+'~'+slotKey(parseInt(t)+1)) : '';
 /* ===== 상태 ===== */
 let DATA=[], STAFF=[], SEL=null, TAB='list', BLOCKED=[];
 const _initDate=new Date(); let calY=_initDate.getFullYear(), calM=_initDate.getMonth(); // 0-based month
-const blockedSet=()=>new Set(BLOCKED.map(b=>b.date));
+const dayBlockedSet=()=>new Set(BLOCKED.filter(b=>(b.time||'ALL')==='ALL').map(b=>b.date));
+const slotBlockMap=()=>{ const m={}; BLOCKED.filter(b=>(b.time||'ALL')!=='ALL').forEach(b=>{ (m[b.date]=m[b.date]||new Set()).add(b.time); }); return m; };
 
 async function doLogin(){
   if(window.DB && DB.enabled){
@@ -376,31 +412,63 @@ function renderCalendar(){
   ['일','월','화','수','목','금','토'].forEach((w,i)=>{ const h=document.createElement('div'); h.className='caldow'+(i===0?' sun':i===6?' sat':''); h.textContent=w; grid.appendChild(h); });
   const first=new Date(calY,calM,1).getDay(), days=new Date(calY,calM+1,0).getDate();
   const todayS=new Date().toISOString().slice(0,10);
-  const blocked=blockedSet();
+  const dayBlk=dayBlockedSet(), slotBlk=slotBlockMap();
   for(let i=0;i<first;i++){ const e=document.createElement('div'); e.className='calcell empty'; grid.appendChild(e); }
   for(let d=1;d<=days;d++){
     const ds=calY+'-'+pad2(calM+1)+'-'+pad2(d);
-    const isBlocked=blocked.has(ds), isPast=ds<todayS;
+    const isBlocked=dayBlk.has(ds), slotCnt=(slotBlk[ds]||new Set()).size, isPast=ds<todayS;
     const cell=document.createElement('div'); cell.className='calcell'+(isPast?' past':'')+(ds===todayS?' today':'')+(isBlocked?' blocked':'');
-    cell.innerHTML='<div class="dnum">'+d+(isBlocked?'<span class="blkflag">휴무</span>':'')+'</div>';
+    const flag = isBlocked?'<span class="blkflag">휴무</span>' : (slotCnt?'<span class="blkflag part">⏰'+slotCnt+'</span>':'');
+    cell.innerHTML='<div class="dnum">'+d+flag+'</div>';
     (byDate[ds]||[]).sort((a,b)=> (a.reserveTime||'').localeCompare(b.reserveTime||''))   // 시간순
       .forEach(a=>{ const b=document.createElement('button'); b.className='bk '+(a.status==='cancelled'?'cancelled':'active');
         const tt=a.reserveTime?('<b>'+a.reserveTime+'</b> '):'';
         b.innerHTML=tt+(a.name||'(무명)')+(a.staff?'<span class="stf">👤 '+a.staff+'</span>':'');
         b.onclick=()=>{ SEL=a.id; switchTab('list'); renderList(); renderDetail(a); window.scrollTo(0,0); };
         cell.appendChild(b); });
-    if(!isPast){ const tg=document.createElement('button'); tg.className='blktog'+(isBlocked?' on':'');
-      tg.textContent=isBlocked?'✓ 휴무 해제':'휴무 지정';
-      tg.onclick=()=>toggleBlock(ds, isBlocked); cell.appendChild(tg); }
+    if(!isPast){ const tg=document.createElement('button'); tg.className='blktog'+(isBlocked||slotCnt?' on':'');
+      tg.textContent = isBlocked?'✓ 전체 휴무' : (slotCnt? '⏰ '+slotCnt+'타임 차단' : '차단 설정');
+      tg.onclick=()=>openSlotModal(ds); cell.appendChild(tg); }
     grid.appendChild(cell);
   }
 }
-async function toggleBlock(ds, isBlocked){
-  const r = isBlocked ? await DB.unblockDates([ds]) : await DB.blockDates([ds], '휴무');
-  if(r.needMigration){ alert('Supabase에 휴무일 테이블이 아직 없어요.\ndocs/06_휴무일_차단_마이그레이션.sql 을 SQL Editor에서 실행해주세요.'); return; }
-  if(!r.ok){ alert('변경 실패: '+(r.error&&(r.error.message||JSON.stringify(r.error)))); return; }
-  await refresh(); switchTab('cal');
+
+/* ===== 날짜별 차단 설정 모달 (하루 전체 휴무 / 시간대별) ===== */
+let MODAL_DS=null;
+function openSlotModal(ds){ MODAL_DS=ds; renderSlotModal(); $('blkmodal').hidden=false; }
+function closeSlotModal(){ $('blkmodal').hidden=true; MODAL_DS=null; }
+function renderSlotModal(){
+  const ds=MODAL_DS; if(!ds) return;
+  const [Y,M,D]=ds.split('-');
+  $('bm-title').textContent=`${+M}월 ${+D}일 예약 차단 설정`;
+  const dayBlk=dayBlockedSet().has(ds);
+  const slotSet=slotBlockMap()[ds]||new Set();
+  const reserved=new Set(DATA.filter(a=>a.status==='active' && a.reserveDate===ds).map(a=>a.reserveTime));
+  let html='';
+  if(dayBlk){
+    html+=`<div class="bm-note">이 날은 <b>하루 전체 휴무</b>로 설정돼 있어요. 예약 폼에서 이 날짜 선택이 막힙니다.</div>
+      <button class="btn-full unblock" onclick="mAllOff()">전체 휴무 해제 (이 날 열기)</button>`;
+  } else {
+    html+=`<button class="btn-full block" onclick="mAllOn()">🔒 하루 전체 휴무로 지정</button>
+      <div class="bm-or">또는 시간대별로 차단</div><div class="bm-slots">`;
+    SLOTS.forEach(h=>{ const t=slotKey(h), isBlk=slotSet.has(t), isRes=reserved.has(t);
+      const cls = isRes?'res' : isBlk?'blk' : 'open';
+      const label = isRes?'예약됨' : isBlk?'차단됨' : '열림';
+      html+=`<button class="bm-slot ${cls}" ${isRes?'disabled':`onclick="mSlot('${t}',${isBlk?0:1})"`}>
+        <span class="tt">${slotLabel(t)}</span><span class="stt">${label}</span></button>`; });
+    html+=`</div><p class="bm-hint">‘차단됨’ 시간대는 예약 폼에서 선택이 막혀요. 이미 예약된 타임은 [신청자]에서 취소/삭제로 관리하세요.</p>`;
+  }
+  $('bm-body').innerHTML=html;
 }
+const MIG_MSG='Supabase에 시간대 차단 컬럼이 아직 없어요.\ndocs/07_시간대별_차단_마이그레이션.sql 을 SQL Editor에서 실행해주세요.';
+async function mAfter(r){
+  if(r.needMigration){ alert(MIG_MSG); return false; }
+  if(!r.ok){ alert('변경 실패: '+(r.error&&(r.error.message||JSON.stringify(r.error)))); return false; }
+  await refresh(); if(MODAL_DS) renderSlotModal(); return true;
+}
+async function mAllOn(){ await mAfter(await DB.blockDates([MODAL_DS],'휴무')); }
+async function mAllOff(){ await mAfter(await DB.unblockDates([MODAL_DS])); }
+async function mSlot(t, on){ await mAfter(on ? await DB.blockSlots(MODAL_DS,[t],'휴무') : await DB.unblockSlots(MODAL_DS,[t])); }
 function eachDate(from, to){ const out=[]; const a=new Date(from+'T00:00'), b=new Date(to+'T00:00');
   for(let t=a; t<=b; t.setDate(t.getDate()+1)){ out.push(t.getFullYear()+'-'+pad2(t.getMonth()+1)+'-'+pad2(t.getDate())); } return out; }
 function rangeDates(){
@@ -416,7 +484,7 @@ async function blockRange(){
   const list=rangeDates(); if(!list) return;
   if(!confirm(list.length+'일을 예약 차단(휴무)할까요?\n('+list[0]+' ~ '+list[list.length-1]+')')) return;
   const r=await DB.blockDates(list, '휴무');
-  if(r.needMigration){ alert('Supabase에 휴무일 테이블이 아직 없어요.\ndocs/06_휴무일_차단_마이그레이션.sql 을 SQL Editor에서 실행해주세요.'); return; }
+  if(r.needMigration){ alert(MIG_MSG); return; }
   if(!r.ok){ alert('설정 실패: '+(r.error&&(r.error.message||JSON.stringify(r.error)))); return; }
   $('bb-from').value=''; $('bb-to').value='';
   await refresh(); switchTab('cal');
@@ -425,7 +493,7 @@ async function unblockRange(){
   const list=rangeDates(); if(!list) return;
   if(!confirm(list.length+'일의 휴무를 해제할까요?\n('+list[0]+' ~ '+list[list.length-1]+')')) return;
   const r=await DB.unblockDates(list);
-  if(r.needMigration){ alert('Supabase에 휴무일 테이블이 아직 없어요.\ndocs/06_휴무일_차단_마이그레이션.sql 을 SQL Editor에서 실행해주세요.'); return; }
+  if(r.needMigration){ alert(MIG_MSG); return; }
   if(!r.ok){ alert('해제 실패: '+(r.error&&(r.error.message||JSON.stringify(r.error)))); return; }
   $('bb-from').value=''; $('bb-to').value='';
   await refresh(); switchTab('cal');

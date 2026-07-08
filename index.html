@@ -631,8 +631,9 @@ function renderExplain(){
 
 const SLOTS=[13,14,15,16,17,18,19];        // 13:00~20:00, 1타임=60분 → 7타임
 const slotKey=h=> (h<10?'0':'')+h+':00';   // 'HH:00'
-let BOOKED=new Set();   // 이미 예약된(active) 'YYYY-MM-DD HH:MM'
-let BLOCKED=new Set();  // 휴무·오픈 전 등 예약 차단일 'YYYY-MM-DD'
+let BOOKED=new Set();       // 이미 예약된(active) 'YYYY-MM-DD HH:MM'
+let BLOCKED_DAYS=new Set(); // 하루 전체 휴무 'YYYY-MM-DD'
+let BLOCKED_SLOTS=new Set();// 특정 시간대 차단 'YYYY-MM-DD HH:MM'
 let SELDATE='', SELSLOT='';
 function todayStr(){ const d=new Date(); return d.toISOString().slice(0,10); }
 async function reserve(){
@@ -648,8 +649,10 @@ async function reserve(){
   go('apply');
   try{ BOOKED=new Set(await DB.bookedSlots()); }
   catch(e){ BOOKED=new Set(); }
-  try{ BLOCKED=new Set((await DB.blockedList()).map(b=>b.date)); }
-  catch(e){ BLOCKED=new Set(); }
+  try{ const rows=await DB.blockedList();
+    BLOCKED_DAYS=new Set(rows.filter(b=>(b.time||'ALL')==='ALL').map(b=>b.date));
+    BLOCKED_SLOTS=new Set(rows.filter(b=>(b.time||'ALL')!=='ALL').map(b=>b.date+' '+b.time)); }
+  catch(e){ BLOCKED_DAYS=new Set(); BLOCKED_SLOTS=new Set(); }
   hint.textContent='날짜를 선택하면 예약 가능한 시간이 나와요.';
 }
 function checkDate(){
@@ -658,20 +661,21 @@ function checkDate(){
   $('a-slot-field').style.display='none';
   if(!v){ hint.className='datehint'; hint.textContent='날짜를 선택하면 예약 가능한 시간이 나와요.'; return; }
   if(v<todayStr()){ hint.className='datehint no'; hint.textContent='지난 날짜는 선택할 수 없어요.'; return; }
-  if(BLOCKED.has(v)){ hint.className='datehint no'; hint.textContent='😢 이 날은 예약을 받지 않아요. 다른 날짜를 골라주세요.'; return; }
-  const allTaken=SLOTS.every(h=>BOOKED.has(v+' '+slotKey(h)));
-  if(allTaken){ hint.className='datehint no'; hint.textContent='😢 이 날은 모든 시간대가 예약 마감됐어요. 다른 날짜를 골라주세요.'; return; }
+  if(BLOCKED_DAYS.has(v)){ hint.className='datehint no'; hint.textContent='😢 이 날은 예약을 받지 않아요. 다른 날짜를 골라주세요.'; return; }
+  const allTaken=SLOTS.every(h=>{ const k=v+' '+slotKey(h); return BOOKED.has(k)||BLOCKED_SLOTS.has(k); });
+  if(allTaken){ hint.className='datehint no'; hint.textContent='😢 이 날은 예약 가능한 시간이 없어요. 다른 날짜를 골라주세요.'; return; }
   hint.className='datehint ok'; hint.textContent='✅ 예약 가능한 날짜예요! 아래에서 시간대를 골라주세요.';
   renderSlots(v);
 }
 function renderSlots(date){
   const box=$('a-slots'); box.innerHTML='';
   SLOTS.forEach(h=>{
-    const key=date+' '+slotKey(h), taken=BOOKED.has(key);
+    const key=date+' '+slotKey(h), booked=BOOKED.has(key), blocked=BLOCKED_SLOTS.has(key), taken=booked||blocked;
     const el=document.createElement('button'); el.type='button';
     el.className='slot'+(taken?' taken':'')+(SELSLOT===slotKey(h)?' sel':'');
-    el.innerHTML=`<span class="st">${slotKey(h)}</span><span class="ss">~${slotKey(h+1)} · 60분</span>`;
-    if(taken){ el.disabled=true; el.title='이미 예약된 시간이에요'; }
+    const sub = blocked&&!booked ? '예약 불가' : '~'+slotKey(h+1)+' · 60분';
+    el.innerHTML=`<span class="st">${slotKey(h)}</span><span class="ss">${sub}</span>`;
+    if(taken){ el.disabled=true; el.title = blocked&&!booked ? '예약을 받지 않는 시간이에요' : '이미 예약된 시간이에요'; }
     else el.onclick=()=>{ SELSLOT=slotKey(h); renderSlots(date); $('a-err').textContent=''; };
     box.appendChild(el);
   });
@@ -686,8 +690,9 @@ async function submitApply(btn){
   if(!/^[0-9][0-9\- ]{8,}$/.test(phone)){ err.textContent='연락처를 정확히 입력해주세요.'; return; }
   if(!reserveDate){ err.textContent='방문 희망 날짜를 선택해주세요.'; return; }
   if(reserveDate<todayStr()){ err.textContent='지난 날짜는 선택할 수 없어요.'; return; }
-  if(BLOCKED.has(reserveDate)){ err.textContent='이 날은 예약을 받지 않아요. 다른 날짜를 골라주세요.'; return; }
+  if(BLOCKED_DAYS.has(reserveDate)){ err.textContent='이 날은 예약을 받지 않아요. 다른 날짜를 골라주세요.'; return; }
   if(!reserveTime){ err.textContent='방문 시간대를 선택해주세요.'; return; }
+  if(BLOCKED_SLOTS.has(reserveDate+' '+reserveTime)){ err.textContent='이 시간대는 예약을 받지 않아요. 다른 시간을 골라주세요.'; return; }
   if(BOOKED.has(reserveDate+' '+reserveTime)){ err.textContent='이미 예약된 시간대예요. 다른 시간을 골라주세요.'; return; }
   if(!$('a-c1').checked){ err.textContent='개인정보 수집·이용 동의가 필요해요.'; return; }
   const s=LAST.s;

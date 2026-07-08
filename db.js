@@ -38,6 +38,24 @@
   // 유니크 충돌(같은 날짜 중복 예약)
   const isConflict   = e => e && (e.code==='23505' || /duplicate key|unique/i.test(e.message||''));
 
+  // 차단(휴무) upsert 공통 — items: [{date,time}], time은 'ALL' 또는 'HH:MM'
+  async function _upsertBlocks(items, reason){
+    items=(items||[]).filter(x=>x&&x.date&&x.time);
+    if(!items.length) return { ok:true };
+    if(client){
+      try{
+        const rows=items.map(x=>({ block_date:x.date, block_time:x.time, reason:reason||null }));
+        const { error } = await client.from('blocked_dates').upsert(rows, { onConflict:'block_date,block_time' });
+        if(error){ if(isMissingObj(error)) return { ok:false, needMigration:true, error }; throw error; }
+        return { ok:true };
+      }catch(e){ return { ok:false, error:e }; }
+    }
+    const a=blockedGet();
+    items.forEach(x=>{ const i=a.findIndex(y=>y.date===x.date && (y.time||'ALL')===x.time);
+      if(i<0) a.push({date:x.date, time:x.time, reason:reason||''}); else a[i].reason=reason||''; });
+    blockedSet(a); return { ok:true };
+  }
+
   // 클라우드 row → 관리자 화면 형태로 정규화
   const norm = r => ({
     ...(r.payload||{}),
@@ -182,34 +200,32 @@
       const a=staffGet().filter(x=>x.id!==id); staffSet(a); return { ok:true };
     },
 
-    /* ---------- 휴무/차단 날짜 (예약 불가일) ----------
-       오픈 전 기간·휴무일 등 예약을 받지 않을 날짜.
+    /* ---------- 휴무/차단 (예약 불가) ----------
+       오픈 전 기간·휴무일 등 예약을 받지 않을 날짜/시간대.
+         block_time = 'ALL'   → 그 날 전체 휴무
+         block_time = 'HH:MM' → 그 날 해당 타임만 차단
        관리자(authenticated)가 등록/해제, 공개 페이지(anon)는 조회만 → 예약 폼에서 차단.
-       테이블 미생성(마이그레이션 전)이면 조회는 [] 로 안전 폴백. */
+       테이블/컬럼 미생성(마이그레이션 전)이면 조회는 [] 로 안전 폴백. */
     async blockedList(){
       if(client){
         try{
-          const { data, error } = await client.from('blocked_dates').select('block_date,reason').order('block_date',{ascending:true});
+          const { data, error } = await client.from('blocked_dates').select('block_date,block_time,reason').order('block_date',{ascending:true});
           if(error) throw error;
-          return (data||[]).map(r=>({ date:r.block_date, reason:r.reason||'' }));
-        }catch(e){ console.warn('[DB] blocked_dates 조회 실패(마이그레이션 전?) → 로컬:', e&&(e.message||e)); return blockedGet(); }
+          return (data||[]).map(r=>({ date:r.block_date, time:r.block_time||'ALL', reason:r.reason||'' }));
+        }catch(e){ console.warn('[DB] blocked_dates 조회 실패(마이그레이션 전?) → 로컬:', e&&(e.message||e)); return blockedGet().map(b=>({date:b.date, time:b.time||'ALL', reason:b.reason||''})); }
       }
-      return blockedGet();
+      return blockedGet().map(b=>({date:b.date, time:b.time||'ALL', reason:b.reason||''}));
     },
+    // 하루 전체 휴무 (block_time='ALL')
     async blockDates(dates, reason){
-      dates=(dates||[]).filter(Boolean);
-      if(!dates.length) return { ok:true };
-      if(client){
-        try{
-          const rows=dates.map(d=>({ block_date:d, reason:reason||null }));
-          const { error } = await client.from('blocked_dates').upsert(rows, { onConflict:'block_date' });
-          if(error){ if(isMissingObj(error)) return { ok:false, needMigration:true, error }; throw error; }
-          return { ok:true };
-        }catch(e){ return { ok:false, error:e }; }
-      }
-      const a=blockedGet(); dates.forEach(d=>{ const i=a.findIndex(x=>x.date===d); if(i<0) a.push({date:d,reason:reason||''}); else a[i].reason=reason||''; });
-      blockedSet(a); return { ok:true };
+      return _upsertBlocks((dates||[]).filter(Boolean).map(d=>({date:d, time:'ALL'})), reason);
     },
+    // 특정 날짜의 특정 시간대만 차단
+    async blockSlots(date, times, reason){
+      if(!date) return { ok:true };
+      return _upsertBlocks((times||[]).filter(Boolean).map(t=>({date, time:t})), reason);
+    },
+    // 날짜 전체 개방 (전체휴무 + 그 날 모든 시간대 차단 삭제)
     async unblockDates(dates){
       dates=(dates||[]).filter(Boolean);
       if(!dates.length) return { ok:true };
@@ -221,6 +237,19 @@
         }catch(e){ return { ok:false, error:e }; }
       }
       const a=blockedGet().filter(x=>!dates.includes(x.date)); blockedSet(a); return { ok:true };
+    },
+    // 특정 시간대만 개방
+    async unblockSlots(date, times){
+      times=(times||[]).filter(Boolean);
+      if(!date || !times.length) return { ok:true };
+      if(client){
+        try{
+          const { error } = await client.from('blocked_dates').delete().eq('block_date', date).in('block_time', times);
+          if(error){ if(isMissingObj(error)) return { ok:false, needMigration:true, error }; throw error; }
+          return { ok:true };
+        }catch(e){ return { ok:false, error:e }; }
+      }
+      const a=blockedGet().filter(x=>!(x.date===date && times.includes(x.time||'ALL'))); blockedSet(a); return { ok:true };
     },
 
     /* 관리자 인증 (Supabase Auth — 이메일/비번) */
