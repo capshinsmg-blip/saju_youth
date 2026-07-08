@@ -632,6 +632,7 @@ function renderExplain(){
 const SLOTS=[13,14,15,16,17,18,19];        // 13:00~20:00, 1타임=60분 → 7타임
 const slotKey=h=> (h<10?'0':'')+h+':00';   // 'HH:00'
 let BOOKED=new Set();   // 이미 예약된(active) 'YYYY-MM-DD HH:MM'
+let BLOCKED=new Set();  // 휴무·오픈 전 등 예약 차단일 'YYYY-MM-DD'
 let SELDATE='', SELSLOT='';
 function todayStr(){ const d=new Date(); return d.toISOString().slice(0,10); }
 async function reserve(){
@@ -647,6 +648,8 @@ async function reserve(){
   go('apply');
   try{ BOOKED=new Set(await DB.bookedSlots()); }
   catch(e){ BOOKED=new Set(); }
+  try{ BLOCKED=new Set((await DB.blockedList()).map(b=>b.date)); }
+  catch(e){ BLOCKED=new Set(); }
   hint.textContent='날짜를 선택하면 예약 가능한 시간이 나와요.';
 }
 function checkDate(){
@@ -655,6 +658,7 @@ function checkDate(){
   $('a-slot-field').style.display='none';
   if(!v){ hint.className='datehint'; hint.textContent='날짜를 선택하면 예약 가능한 시간이 나와요.'; return; }
   if(v<todayStr()){ hint.className='datehint no'; hint.textContent='지난 날짜는 선택할 수 없어요.'; return; }
+  if(BLOCKED.has(v)){ hint.className='datehint no'; hint.textContent='😢 이 날은 예약을 받지 않아요. 다른 날짜를 골라주세요.'; return; }
   const allTaken=SLOTS.every(h=>BOOKED.has(v+' '+slotKey(h)));
   if(allTaken){ hint.className='datehint no'; hint.textContent='😢 이 날은 모든 시간대가 예약 마감됐어요. 다른 날짜를 골라주세요.'; return; }
   hint.className='datehint ok'; hint.textContent='✅ 예약 가능한 날짜예요! 아래에서 시간대를 골라주세요.';
@@ -682,6 +686,7 @@ async function submitApply(btn){
   if(!/^[0-9][0-9\- ]{8,}$/.test(phone)){ err.textContent='연락처를 정확히 입력해주세요.'; return; }
   if(!reserveDate){ err.textContent='방문 희망 날짜를 선택해주세요.'; return; }
   if(reserveDate<todayStr()){ err.textContent='지난 날짜는 선택할 수 없어요.'; return; }
+  if(BLOCKED.has(reserveDate)){ err.textContent='이 날은 예약을 받지 않아요. 다른 날짜를 골라주세요.'; return; }
   if(!reserveTime){ err.textContent='방문 시간대를 선택해주세요.'; return; }
   if(BOOKED.has(reserveDate+' '+reserveTime)){ err.textContent='이미 예약된 시간대예요. 다른 시간을 골라주세요.'; return; }
   if(!$('a-c1').checked){ err.textContent='개인정보 수집·이용 동의가 필요해요.'; return; }
@@ -701,12 +706,11 @@ async function submitApply(btn){
     return;
   }
   if(res && res.ok){
-    const e=res.error, msg=e&&(e.message||e.hint||e.code||JSON.stringify(e));
     const note=$('done-note');
     const dd=$('done-date'); dd.textContent = reserveDate ? ('📅 방문 예약: '+reserveDate+' '+reserveTime+'~'+slotKey(parseInt(reserveTime)+1)) : '';
-    if(res.mode==='supabase'){ note.style.color='#7fcf9b'; note.textContent='☁️ 클라우드에 저장됐어요 (관리자에서 조회 가능)'; }
-    else if(res.mode==='local-fallback'){ note.style.color='#e0a05c'; note.textContent='※ 서버 저장 실패로 임시저장됨. 이 문구를 캡처해 보내주세요 → '+msg; }
-    else { note.style.color='#e0a05c'; note.textContent='💾 서버에 연결되지 않아 임시 저장됐어요(관리자엔 안 보임). 페이지를 새로고침 후 다시 시도해 주세요.'; }
+    // 정상 접수는 별도 안내 없이 완료 화면만. 저장 실패한 경우에만 재시도 안내.
+    if(res.mode==='supabase'){ note.textContent=''; }
+    else{ note.style.color='#e0a05c'; note.textContent='⚠️ 네트워크 문제로 접수가 완전히 저장되지 않았을 수 있어요. 잠시 후 새로고침 뒤 다시 신청해 주세요.'; }
     go('done');
   } else {
     console.error('[apply] 저장 오류:', res&&res.error);

@@ -21,14 +21,20 @@
 
   const LS = 'saju_applicants';
   const LS_STAFF = 'saju_staff';
+  const LS_BLOCKED = 'saju_blocked';
   const lsGet = ()=>{ try{ return JSON.parse(localStorage.getItem(LS)||'[]'); }catch(e){ return []; } };
   const lsSet = a=> localStorage.setItem(LS, JSON.stringify(a));
   const lsAdd = o=>{ const a=lsGet(); a.unshift(o); lsSet(a); };
   const staffGet = ()=>{ try{ return JSON.parse(localStorage.getItem(LS_STAFF)||'[]'); }catch(e){ return []; } };
   const staffSet = a=> localStorage.setItem(LS_STAFF, JSON.stringify(a));
+  const blockedGet = ()=>{ try{ return JSON.parse(localStorage.getItem(LS_BLOCKED)||'[]'); }catch(e){ return []; } };
+  const blockedSet = a=> localStorage.setItem(LS_BLOCKED, JSON.stringify(a));
 
   // 컬럼 미존재(마이그레이션 전) 에러 판별
   const isMissingCol = e => e && (e.code==='42703' || e.code==='PGRST204' || /column .* does not exist/i.test(e.message||''));
+  // 테이블/컬럼 미존재(마이그레이션 전) 통합 판별 — blocked_dates 등 신규 객체 대응
+  const isMissingObj = e => e && (e.code==='42703' || e.code==='42P01' || e.code==='PGRST204' || e.code==='PGRST205'
+                                  || /does not exist|schema cache|could not find/i.test(e.message||''));
   // 유니크 충돌(같은 날짜 중복 예약)
   const isConflict   = e => e && (e.code==='23505' || /duplicate key|unique/i.test(e.message||''));
 
@@ -174,6 +180,47 @@
         catch(e){ const a=staffGet().filter(x=>x.id!==id); staffSet(a); return { ok:true, mode:'local-fallback', error:e }; }
       }
       const a=staffGet().filter(x=>x.id!==id); staffSet(a); return { ok:true };
+    },
+
+    /* ---------- 휴무/차단 날짜 (예약 불가일) ----------
+       오픈 전 기간·휴무일 등 예약을 받지 않을 날짜.
+       관리자(authenticated)가 등록/해제, 공개 페이지(anon)는 조회만 → 예약 폼에서 차단.
+       테이블 미생성(마이그레이션 전)이면 조회는 [] 로 안전 폴백. */
+    async blockedList(){
+      if(client){
+        try{
+          const { data, error } = await client.from('blocked_dates').select('block_date,reason').order('block_date',{ascending:true});
+          if(error) throw error;
+          return (data||[]).map(r=>({ date:r.block_date, reason:r.reason||'' }));
+        }catch(e){ console.warn('[DB] blocked_dates 조회 실패(마이그레이션 전?) → 로컬:', e&&(e.message||e)); return blockedGet(); }
+      }
+      return blockedGet();
+    },
+    async blockDates(dates, reason){
+      dates=(dates||[]).filter(Boolean);
+      if(!dates.length) return { ok:true };
+      if(client){
+        try{
+          const rows=dates.map(d=>({ block_date:d, reason:reason||null }));
+          const { error } = await client.from('blocked_dates').upsert(rows, { onConflict:'block_date' });
+          if(error){ if(isMissingObj(error)) return { ok:false, needMigration:true, error }; throw error; }
+          return { ok:true };
+        }catch(e){ return { ok:false, error:e }; }
+      }
+      const a=blockedGet(); dates.forEach(d=>{ const i=a.findIndex(x=>x.date===d); if(i<0) a.push({date:d,reason:reason||''}); else a[i].reason=reason||''; });
+      blockedSet(a); return { ok:true };
+    },
+    async unblockDates(dates){
+      dates=(dates||[]).filter(Boolean);
+      if(!dates.length) return { ok:true };
+      if(client){
+        try{
+          const { error } = await client.from('blocked_dates').delete().in('block_date', dates);
+          if(error){ if(isMissingObj(error)) return { ok:false, needMigration:true, error }; throw error; }
+          return { ok:true };
+        }catch(e){ return { ok:false, error:e }; }
+      }
+      const a=blockedGet().filter(x=>!dates.includes(x.date)); blockedSet(a); return { ok:true };
     },
 
     /* 관리자 인증 (Supabase Auth — 이메일/비번) */

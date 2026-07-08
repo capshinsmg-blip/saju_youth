@@ -102,7 +102,17 @@
   .badge.active{background:#15804922;color:#158049;} .badge.cancelled{background:#6f6a7c22;color:#6f6a7c;}
   .badge.dup{background:#c23b3222;color:#c23b32;} .badge.date{background:#a6741a22;color:#a6741a;}
   .badge.staff{background:#3f6fb822;color:#3f6fb8;}
+  .badge.blocked{background:#c23b3222;color:#c23b32;}
   .appli.cancelled{opacity:.55;} .appli.cancelled .n{text-decoration:line-through;}
+  /* 예약 차단(휴무) 설정바 */
+  .blockbar{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:16px;}
+  .blockbar .bb-title{font-size:13px;font-weight:700;color:var(--gold2);margin-bottom:10px;}
+  .blockbar .bb-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
+  .blockbar input[type=date]{background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:9px;padding:9px 11px;font-size:14px;font-family:inherit;color-scheme:light;}
+  .blockbar .bb-sep{color:var(--dim);}
+  .blockbar .bb-block{background:#c23b32;color:#fff;border:none;font-weight:700;border-radius:9px;padding:9px 14px;font-size:13px;cursor:pointer;}
+  .blockbar .bb-unblock{background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:9px;padding:9px 14px;font-size:13px;cursor:pointer;}
+  .blockbar .bb-hint{font-size:12px;color:var(--dim);margin-top:9px;line-height:1.6;}
   /* 캘린더 */
   .calhead{display:flex;align-items:center;justify-content:center;gap:18px;margin-bottom:16px;}
   .calhead button{background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:9px;width:38px;height:38px;font-size:18px;cursor:pointer;}
@@ -113,8 +123,13 @@
   .calcell{min-height:78px;border:1px solid var(--line);border-radius:10px;padding:6px;background:var(--panel);font-size:11px;position:relative;}
   .calcell.empty{background:transparent;border:none;}
   .calcell.past{opacity:.4;}
-  .calcell .dnum{font-size:12px;color:var(--dim);margin-bottom:4px;}
+  .calcell.blocked{background:repeating-linear-gradient(45deg,#c23b320d,#c23b320d 6px,#c23b3218 6px,#c23b3218 12px);border-color:#c23b3255;}
+  .calcell .dnum{font-size:12px;color:var(--dim);margin-bottom:4px;display:flex;align-items:center;justify-content:space-between;gap:4px;}
+  .calcell .dnum .blkflag{font-size:9px;font-weight:700;color:#c23b32;background:#c23b3218;border-radius:5px;padding:1px 5px;}
   .calcell.today .dnum{color:var(--gold);font-weight:700;}
+  .calcell .blktog{display:block;width:100%;margin-top:5px;border:1px dashed var(--line);background:transparent;color:var(--dim);border-radius:7px;padding:4px 5px;font-size:10.5px;cursor:pointer;font-family:inherit;}
+  .calcell .blktog:hover{border-color:#c23b3255;color:#c23b32;}
+  .calcell .blktog.on{background:#c23b32;color:#fff;border-style:solid;border-color:#c23b32;}
   .calcell .bk{display:block;width:100%;text-align:left;border:none;border-radius:7px;padding:5px 6px;margin-top:3px;font-size:11px;line-height:1.35;cursor:pointer;font-family:inherit;}
   .calcell .bk.active{background:rgba(230,201,138,.16);color:var(--gold);}
   .calcell .bk.cancelled{background:rgba(156,151,168,.16);color:var(--dim);text-decoration:line-through;}
@@ -184,6 +199,17 @@
 
   <!-- 캘린더 -->
   <div id="tab-cal" class="tabpane" style="display:none;">
+    <div class="blockbar">
+      <div class="bb-title">🔒 예약 차단(휴무·오픈 전) 설정</div>
+      <div class="bb-row">
+        <input type="date" id="bb-from" />
+        <span class="bb-sep">~</span>
+        <input type="date" id="bb-to" />
+        <button class="bb-block" onclick="blockRange()">기간 휴무 지정</button>
+        <button class="bb-unblock" onclick="unblockRange()">기간 해제</button>
+      </div>
+      <p class="bb-hint">기간을 정해 한 번에 막거나(오픈 전), 아래 달력에서 날짜별 <b>휴무</b> 버튼으로 하루씩 막을 수 있어요. 차단된 날은 예약 페이지에서 선택이 막힙니다.</p>
+    </div>
     <div class="calhead">
       <button onclick="calNav(-1)">‹</button>
       <div class="mon" id="calMon"></div>
@@ -193,6 +219,7 @@
     <div class="callegend">
       <span><span class="badge active">예약확정</span> 방문 예정</span>
       <span><span class="badge cancelled">취소</span> 취소된 일정</span>
+      <span><span class="badge blocked">휴무</span> 예약 차단일</span>
       <span>날짜 칸의 예약을 누르면 상세 풀이로 이동합니다.</span>
     </div>
   </div>
@@ -255,8 +282,9 @@ const slotLabel=t=> t ? (t+'~'+slotKey(parseInt(t)+1)) : '';
 })();
 
 /* ===== 상태 ===== */
-let DATA=[], STAFF=[], SEL=null, TAB='list';
+let DATA=[], STAFF=[], SEL=null, TAB='list', BLOCKED=[];
 const _initDate=new Date(); let calY=_initDate.getFullYear(), calM=_initDate.getMonth(); // 0-based month
+const blockedSet=()=>new Set(BLOCKED.map(b=>b.date));
 
 async function doLogin(){
   if(window.DB && DB.enabled){
@@ -275,16 +303,18 @@ window.addEventListener('focus', ()=>{ if($('dash') && $('dash').style.display==
 let LIST_ERR=null, ADMIN_EMAIL='';
 async function loadAll(){
   LIST_ERR=null;
-  // 서로 독립적인 3개 호출 — 병렬 처리
-  const [listR, staffR, userR] = await Promise.all([
+  // 서로 독립적인 4개 호출 — 병렬 처리
+  const [listR, staffR, userR, blockR] = await Promise.all([
     DB.list({includeDeleted:true}).then(d=>({d})).catch(e=>({e})),
     DB.staffList().then(d=>({d})).catch(()=>({d:[]})),
-    DB.user().then(d=>({d})).catch(()=>({d:null}))
+    DB.user().then(d=>({d})).catch(()=>({d:null})),
+    DB.blockedList().then(d=>({d})).catch(()=>({d:[]}))
   ]);
   if(listR.e){ LIST_ERR=listR.e; DATA=[]; } else { DATA=listR.d; }
   if(!DB.enabled) DATA = DATA.concat(SAMPLE);
   STAFF = staffR.d || [];
   ADMIN_EMAIL = (userR.d && userR.d.email) || '';
+  BLOCKED = blockR.d || [];
 }
 async function refresh(){ await loadAll(); renderAll(); }
 function renderAll(){
@@ -346,19 +376,59 @@ function renderCalendar(){
   ['일','월','화','수','목','금','토'].forEach((w,i)=>{ const h=document.createElement('div'); h.className='caldow'+(i===0?' sun':i===6?' sat':''); h.textContent=w; grid.appendChild(h); });
   const first=new Date(calY,calM,1).getDay(), days=new Date(calY,calM+1,0).getDate();
   const todayS=new Date().toISOString().slice(0,10);
+  const blocked=blockedSet();
   for(let i=0;i<first;i++){ const e=document.createElement('div'); e.className='calcell empty'; grid.appendChild(e); }
   for(let d=1;d<=days;d++){
     const ds=calY+'-'+pad2(calM+1)+'-'+pad2(d);
-    const cell=document.createElement('div'); cell.className='calcell'+(ds<todayS?' past':'')+(ds===todayS?' today':'');
-    cell.innerHTML='<div class="dnum">'+d+'</div>';
+    const isBlocked=blocked.has(ds), isPast=ds<todayS;
+    const cell=document.createElement('div'); cell.className='calcell'+(isPast?' past':'')+(ds===todayS?' today':'')+(isBlocked?' blocked':'');
+    cell.innerHTML='<div class="dnum">'+d+(isBlocked?'<span class="blkflag">휴무</span>':'')+'</div>';
     (byDate[ds]||[]).sort((a,b)=> (a.reserveTime||'').localeCompare(b.reserveTime||''))   // 시간순
       .forEach(a=>{ const b=document.createElement('button'); b.className='bk '+(a.status==='cancelled'?'cancelled':'active');
         const tt=a.reserveTime?('<b>'+a.reserveTime+'</b> '):'';
         b.innerHTML=tt+(a.name||'(무명)')+(a.staff?'<span class="stf">👤 '+a.staff+'</span>':'');
         b.onclick=()=>{ SEL=a.id; switchTab('list'); renderList(); renderDetail(a); window.scrollTo(0,0); };
         cell.appendChild(b); });
+    if(!isPast){ const tg=document.createElement('button'); tg.className='blktog'+(isBlocked?' on':'');
+      tg.textContent=isBlocked?'✓ 휴무 해제':'휴무 지정';
+      tg.onclick=()=>toggleBlock(ds, isBlocked); cell.appendChild(tg); }
     grid.appendChild(cell);
   }
+}
+async function toggleBlock(ds, isBlocked){
+  const r = isBlocked ? await DB.unblockDates([ds]) : await DB.blockDates([ds], '휴무');
+  if(r.needMigration){ alert('Supabase에 휴무일 테이블이 아직 없어요.\ndocs/06_휴무일_차단_마이그레이션.sql 을 SQL Editor에서 실행해주세요.'); return; }
+  if(!r.ok){ alert('변경 실패: '+(r.error&&(r.error.message||JSON.stringify(r.error)))); return; }
+  await refresh(); switchTab('cal');
+}
+function eachDate(from, to){ const out=[]; const a=new Date(from+'T00:00'), b=new Date(to+'T00:00');
+  for(let t=a; t<=b; t.setDate(t.getDate()+1)){ out.push(t.getFullYear()+'-'+pad2(t.getMonth()+1)+'-'+pad2(t.getDate())); } return out; }
+function rangeDates(){
+  let from=$('bb-from').value, to=$('bb-to').value;
+  if(!from && !to){ alert('시작일과 종료일을 선택해주세요.'); return null; }
+  if(!from) from=to; if(!to) to=from;                 // 하나만 고르면 그 하루만
+  if(from>to){ const t=from; from=to; to=t; }          // 순서 뒤집힘 보정
+  const list=eachDate(from,to);
+  if(list.length>120){ alert('한 번에 최대 120일까지만 설정할 수 있어요.'); return null; }
+  return list;
+}
+async function blockRange(){
+  const list=rangeDates(); if(!list) return;
+  if(!confirm(list.length+'일을 예약 차단(휴무)할까요?\n('+list[0]+' ~ '+list[list.length-1]+')')) return;
+  const r=await DB.blockDates(list, '휴무');
+  if(r.needMigration){ alert('Supabase에 휴무일 테이블이 아직 없어요.\ndocs/06_휴무일_차단_마이그레이션.sql 을 SQL Editor에서 실행해주세요.'); return; }
+  if(!r.ok){ alert('설정 실패: '+(r.error&&(r.error.message||JSON.stringify(r.error)))); return; }
+  $('bb-from').value=''; $('bb-to').value='';
+  await refresh(); switchTab('cal');
+}
+async function unblockRange(){
+  const list=rangeDates(); if(!list) return;
+  if(!confirm(list.length+'일의 휴무를 해제할까요?\n('+list[0]+' ~ '+list[list.length-1]+')')) return;
+  const r=await DB.unblockDates(list);
+  if(r.needMigration){ alert('Supabase에 휴무일 테이블이 아직 없어요.\ndocs/06_휴무일_차단_마이그레이션.sql 을 SQL Editor에서 실행해주세요.'); return; }
+  if(!r.ok){ alert('해제 실패: '+(r.error&&(r.error.message||JSON.stringify(r.error)))); return; }
+  $('bb-from').value=''; $('bb-to').value='';
+  await refresh(); switchTab('cal');
 }
 
 /* ===== 담당자 ===== */
