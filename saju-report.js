@@ -303,6 +303,312 @@
     return html;
   }
 
+  /* ================= S3. 평생 총운 ================= */
+  function sec3(s, x){
+    if(!x.daeunEx||!x.daeunEx.length) return p('대운 정보를 계산할 수 없습니다.');
+    const now=s.luck?s.luck.nowY:0;
+    let html=p(`${term('대운')}의 배열을 따라 인생의 큰 계절을 시기별로 읽습니다. 좋고 나쁨의 문제가 아니라 "이 시기에 어떤 기운이 들어오는가"의 문제입니다 — 계절에 맞는 옷을 입으면 어느 대운이든 살 만해집니다.`);
+    const su=x.daeunSu;
+    if(su&&su.age!=null){
+      const yearP=s.pillars.find(pp=>pp.lab==='년');
+      const yu=yearP&&yearP.zhi?X.unseong(s.dayGan,yearP.zhi):null;
+      html+=h4(`어린 시절 (0~${su.age}세) — 대운 이전`);
+      html+=p(`아직 대운이 들어오기 전, 원국 그대로의 기운으로 사는 시기입니다. 년주는 뿌리·가정환경의 자리${yu?` — 12운성 '${yu}'(${UNSEONG_DESC[yu].word})의 기운 위에서 출발했습니다`:''}. 이 시기의 환경이 아래 대운들을 받아들이는 그릇이 됩니다.`);
+    }
+    x.daeunEx.forEach(d=>{
+      const cur=now>=d.startYear&&now<=d.endYear;
+      const det=C.SHISHEN_DETAIL[d.god]||{};
+      const firstSent=(det.period||'').split('. ')[0].replace(/\.?$/,'.');
+      const u=UNSEONG_DESC[d.unseong]||{};
+      const chung=d.rel.some(r=>r.type==='충');
+      html+=h4(`${d.startAge}~${d.endAge}세 (${d.startYear}~${d.endYear}) — ${gzko(d.gz)} ${d.god} 대운${cur?' <span class="rp-tag gd">현재</span>':''}`);
+      html+=p(`${firstSent} 이 시기의 체력은 12운성 '<b>${d.unseong}</b>'(${u.word}) — ${u.luck}.`
+        + (chung?` 여기에 원국과 ${term('충')}이 걸려 있어 이사·이직·관계 재편처럼 <b>자리가 바뀌는 전환점</b>이 되기 쉬운 대운입니다.`:'')
+        + (d.gongmang?` 지지가 ${term('공망')}에 해당해, 이 시기의 성취는 겉보다 속(의미·실력)으로 채워야 허무하지 않습니다.`:'')
+        + (d.gwiin?' 천을귀인이 드는 시기 — 힘들 때 도와주는 사람이 나타납니다.':''));
+    });
+    html+=note('시기별 세부 전략(돈·직업·연애·건강·관계)은 10단계 대운 상세 해석에서 이어집니다.');
+    return html;
+  }
+
+  /* ================= S4. 금전운 ================= */
+  function sec4(s, x, a, ctx){
+    const t10=ctx.t10;
+    const mt=moneyType(s,t10), M=MONEY_TYPE[mt];
+    const jaeD=daeunOf(x,GROUP.재성), jaeS=saeunOf(x,GROUP.재성), biD=daeunOf(x,GROUP.비겁), geopS=saeunOf(x,['겁재']);
+    let html=`<div class="rp-scorebar">💰 금전운 ${s.money}% · ${C.grade(s.money)}</div>`;
+    html+=h4('이 사주가 돈을 버는 방식');
+    html+=p(`<b>${mt}</b> — ${M.how}.`);
+    html+=why(`${term('재성')} ${t10.편재+t10.정재}개(편재 ${t10.편재}·정재 ${t10.정재}), ${term('식상')} ${t10.식신+t10.상관}개, ${term('비겁')} ${t10.비견+t10.겁재}개의 구성이 이 유형을 가리킵니다.`);
+    html+=h4('재물이 커지는 구간');
+    html+=p(jaeD.length
+      ? `재성 대운 — ${jaeD.map(fmtDaeun).join(', ')} 구간이 재물의 파이프가 가장 굵어지는 때입니다. ${M.max}.`
+      : `향후 대운 배열에 재성 대운이 뚜렷하지 않아 10년 단위의 대박 구간보다는, 해 단위의 기회를 잡는 그림입니다. ${M.max}.`);
+    if(jaeS.length) html+=p(`가까운 세운 기준으로는 ${jaeS.map(fmtSaeun).join(', ')}에 돈의 기회가 들어옵니다. 이 해에는 저축·투자 비중을 미리 늘려 그릇을 준비하세요.`);
+    html+=h4('돈이 새기 쉬운 시기와 이유');
+    let leak=[];
+    if(biD.length) leak.push(`${biD.map(fmtDaeun).join(', ')} — 비겁 대운은 내 돈에 숟가락이 늘어나는 시기(동업·보증·부탁)`);
+    if(geopS.length) leak.push(`${geopS.map(fmtSaeun).join(', ')} — 겁재 세운은 충동 지출·투자 손실·금전 다툼의 해`);
+    html+= leak.length?ul(leak):p('대운·세운 배열상 크게 새는 구간은 두드러지지 않습니다. 다만 아래 리스크 패턴은 상시 유효합니다.');
+    html+=p(`이 유형의 최대 리스크 — ${M.risk}.`);
+    html+=h4('현실적인 축재 전략');
+    html+=p(`${M.strategy}.`+(x.yong?` 개운 관점으로는 ${term('용신')} ${elko(x.yong.yong)} 기운의 활동·색(${(C.REC[x.yong.yong]||{}).color||''})을 금전 습관에 붙이면 흐름이 부드러워집니다.`:''));
+    return html;
+  }
+
+  /* ================= S5. 직업운 ================= */
+  function sec5(s, x, a, ctx){
+    const t10=ctx.t10;
+    const ct=careerType(s,t10), K=CAREER_TYPE[ct];
+    const gd=x.gyeok?GYEOK_DESC[x.gyeok.name]:null;
+    const sikS=saeunOf(x,GROUP.식상), gwanS=saeunOf(x,['정관']), pgwanS=saeunOf(x,['편관']);
+    const yeokS=(x.saeunEx||[]).filter(y=>y.sinsal==='역마살');
+    let html=h4('타고난 직업 적성');
+    html+=p(`<b>${ct}</b> — ${K.fit}. ${K.style}입니다.`);
+    html+=why(`${term('관성')} ${t10.편관+t10.정관}개, ${term('인성')} ${t10.편인+t10.정인}개, 식상 ${t10.식신+t10.상관}개, 비겁 ${t10.비견+t10.겁재}개 + ${s.body} 판정의 조합.`);
+    if(gd) html+=p(`${term('격국')}(${x.gyeok.name}) 관점에서도 ${gd.work} 쪽에서 그릇이 커지는 구조라, 두 판정이 같은 방향을 가리킵니다.`);
+    html+=h4('이동·독립이 잘 맞는 시기');
+    const moves=[];
+    if(sikS.length) moves.push(`${sikS.map(fmtSaeun).join(', ')} — 식상 세운: 내 실력을 밖으로 내놓기 좋은 해(이직 포트폴리오·창업 준비)`);
+    if(yeokS.length) moves.push(`${yeokS.map(fmtSaeun).join(', ')} — 역마 세운: 자리 이동(이직·전근·이사)이 자연스럽게 풀리는 해`);
+    (x.daeunEx||[]).forEach((d,i)=>{ const nx=x.daeunEx[i+1];
+      if(nx && s.luck && nx.startYear>s.luck.nowY && nx.startYear<=s.luck.nowY+10) moves.push(`${nx.startYear}년 전후 — 대운이 ${gzko(nx.gz)}(${nx.god})으로 바뀌는 경계: 인생 챕터가 넘어가는 이동 적기`); });
+    html+= moves.length?ul(moves):p('가까운 10년 안에 두드러진 이동 신호는 없습니다 — 지금 자리에서 깊이를 쌓는 것이 유리합니다.');
+    html+=h4('도약기와 조심할 시기');
+    html+=p((gwanS.length?`${gwanS.map(fmtSaeun).join(', ')}는 승진·합격·임명 등 제도권 상승 운이 드는 해입니다. `:'')
+      +(pgwanS.length?`${pgwanS.map(fmtSaeun).join(', ')}는 압박과 기회가 함께 오는 승부처 — 과로와 관재(법·규정 문제)만 관리하면 오히려 도약의 해가 됩니다.`:'관성 세운이 뚜렷하지 않은 구간은 직위보다 실력을 쌓는 데 쓰세요.'));
+    html+=p(`한 줄 전략 — ${K.tip}.`);
+    return html;
+  }
+
+  /* ================= S6. 연애운 ================= */
+  function sec6(s, x, a, ctx){
+    const t10=ctx.t10;
+    const female=s.input.sex==='female';
+    const starNm=female?'관성':'재성';
+    const starCnt=female?(t10.편관+t10.정관):(t10.편재+t10.정재);
+    const g=C.ILGAN[s.dayGan];
+    const iljuZhi=x.pillars.find(pp=>pp.lab==='일');
+    const sg=iljuZhi&&iljuZhi.ssZhi?SPOUSE_GONG[iljuZhi.ssZhi]:null;
+    const starS=saeunOf(x,GROUP[starNm]);
+    const dohwaS=(x.saeunEx||[]).filter(y=>y.sinsal==='도화살');
+    let html=`<div class="rp-scorebar">💕 연애운 ${s.love}% · ${C.grade(s.love)}</div>`;
+    html+=h4('인연의 그릇 — 배우자성의 세기');
+    html+=p(starCnt>=2?`이성·인연을 뜻하는 ${term(starNm)}이 ${starCnt}개로 뚜렷합니다. 인연의 기회 자체는 자주 오는 사주 — 문제는 고르는 눈이지 만남의 수가 아닙니다.`
+      : starCnt===1?`${term(starNm)}이 1개 — 인연의 씨앗은 분명히 있습니다. 폭넓게 만나기보다 한 인연을 깊게 키우는 쪽이 맞는 구조입니다.`
+      : `${term(starNm)}이 원국에 드러나지 않았습니다. 인연이 늦거나 연애의 우선순위가 낮은 편 — 나쁜 게 아니라 "일과 자기 세계가 먼저 차는" 구조입니다. 인연은 운(대운·세운)에서 별이 들어올 때 집중적으로 옵니다.`);
+    html+=h4('사랑을 시작하는 방식');
+    html+=p(`${g.love} — 일간 ${s.dayGan}(${g.nick})의 연애 문법입니다.`);
+    if(sg){
+      html+=h4('끌리는 상대와 반복 패턴 — 배우자궁');
+      html+=p(`일지(배우자 자리)의 중심 기운이 <b>${iljuZhi.ssZhi}</b>이라, 본능적으로 <b>${sg.attract}</b>에게 끌립니다. 다만 같은 이유로 "${sg.issue.split(' — ')[0]}"가 반복 패턴이 되기 쉽습니다 — ${sg.issue.split(' — ')[1]||''}`);
+    }
+    const fails=[];
+    if(t10.상관>=2&&female) fails.push('상관이 강해 상대의 허점이 먼저 보이는 타입 — 말로 이기면 관계에선 지는 패턴 주의');
+    if(t10.비견+t10.겁재>=3) fails.push('비겁 과다 — 친구에서 연인이 되거나, 경쟁자가 끼어드는 삼각 구도가 반복되기 쉬움');
+    if(t10.편인+t10.정인>=3) fails.push('인성 과다 — 머리로 연애하는 타입, 재는 사이 타이밍을 놓치는 패턴');
+    if(x.pillars.some(pp=>pp.sinsal==='도화살')) fails.push('도화 보유 — 인기가 많아 시작은 쉽지만 구설이 따르기 쉬움, 정리는 깔끔하게');
+    if(fails.length){ html+=h4('조심해야 할 연애 패턴'); html+=ul(fails); }
+    html+=h4('잘 맞는 사람, 피해야 할 사람');
+    html+=p((x.yong?`${term('용신')} 관점으로 ${elko(x.yong.yong)} 기운(${C.EL_DESC[x.yong.yong]})을 가진 사람이 내 균형을 잡아주는 짝입니다. 반대로 ${term('기신')}인 ${elko(x.yong.gi)} 기운이 강한 사람과는 처음엔 강렬해도 갈수록 소모됩니다. `:'')
+      +(sg?`구체적으로는 ${sg.attract} 중에서도 생활의 합(돈 쓰는 법·쉬는 법)이 맞는 사람을 고르세요.`:''));
+    html+=h4('인연이 들어오는 시기');
+    const loveTimes=[];
+    if(starS.length) loveTimes.push(`${starS.map(fmtSaeun).join(', ')} — ${starNm} 세운: 배우자감 인연이 드는 대표적인 해`);
+    if(dohwaS.length) loveTimes.push(`${dohwaS.map(fmtSaeun).join(', ')} — 도화 세운: 이성의 관심이 몰리는 해(가벼운 인연과 구별할 것)`);
+    html+= loveTimes.length?ul(loveTimes):p('가까운 10년 세운에 배우자성이 뚜렷하지 않아, 인연은 소개·모임 등 의식적인 노력으로 만들어야 하는 구간입니다.');
+    return html;
+  }
+
+  /* ================= S7. 결혼운 ================= */
+  function sec7(s, x, a, ctx){
+    const t10=ctx.t10;
+    const female=s.input.sex==='female';
+    const starNm=female?'관성':'재성';
+    const ilju=x.pillars.find(pp=>pp.lab==='일');
+    const sg=ilju&&ilju.ssZhi?SPOUSE_GONG[ilju.ssZhi]:null;
+    const iljuUn=ilju?ilju.unseong:null;
+    const starD=daeunOf(x,GROUP[starNm]), starS=saeunOf(x,GROUP[starNm]);
+    const hapS=(x.saeunEx||[]).filter(y=>y.rel.some(r=>r.type==='육합'&&r.with==='일'));
+    const iljuChung=x.rel.some(r=>r.type==='충'&&r.a&&r.b&&(r.a.lab==='일'||r.b.lab==='일'));
+    const iljuGongmang=ilju&&ilju.gongmang;
+    // 배우자성 위치로 이른/늦은 인연 판단
+    const earlyStar=x.pillars.some(pp=>(pp.lab==='년'||pp.lab==='월')&&pp.gan&&(GROUP[starNm].includes(pp.ssGan)||GROUP[starNm].includes(pp.ssZhi)));
+    let html=h4('결혼의 시계 — 이른 인연인가 늦은 인연인가');
+    html+=p(earlyStar
+      ? `배우자성(${starNm})이 년·월주(인생의 앞 시기)에 자리해 <b>인연이 이른 편</b>입니다. 다만 이른 인연일수록 상대를 검증할 시간이 짧으니, 결혼 전 함께 겪는 경험(여행·갈등·돈 문제)을 의도적으로 만들어보길 권합니다.`
+      : `배우자성(${starNm})이 인생의 앞 시기(년·월주)에 드러나지 않아 <b>늦을수록 안정되는 인연</b>입니다. 조급함이 최대의 적 — 사회적 기반이 잡힌 뒤의 결혼이 이 사주에겐 더 단단합니다.`);
+    html+=h4('가장 유력한 결혼 시기');
+    const times=[];
+    if(starD.length) times.push(`${starD.map(fmtDaeun).join(', ')} — 배우자성 대운: 결혼이 성사되기 가장 쉬운 10년 구간`);
+    if(starS.length) times.push(`${starS.map(fmtSaeun).join(', ')} — 배우자성 세운: 그중에서도 구체적 혼담이 들어오는 해`);
+    if(hapS.length) times.push(`${hapS.map(fmtSaeun).join(', ')} — 일지(배우자궁)와 합이 드는 해: 마음이 묶이는 인연의 해`);
+    html+= times.length?ul(times):p('가까운 대운·세운에 결혼 신호가 강하게 잡히지 않습니다. 시기를 기다리기보다 "준비된 사람"이 되는 쪽이 이 구간의 정답입니다.');
+    if(sg){
+      html+=h4('배우자의 성향과 결혼생활의 그림');
+      html+=p(`배우자궁(일지)의 기운으로 보면 배우자는 <b>${sg.spouse}</b>일 가능성이 높습니다.`
+        +(iljuUn?` 배우자궁의 12운성은 '${iljuUn}'(${(UNSEONG_DESC[iljuUn]||{}).word}) — ${(UNSEONG_DESC[iljuUn]||{}).life}.`:''));
+      html+=h4('갈등 포인트와 관리법');
+      const issues=[`${sg.issue}`];
+      if(iljuChung) issues.push(`일지에 ${term('충')} — 배우자 자리가 흔들리기 쉬운 구조입니다. 각자의 공간·시간을 존중하는 "따로 또 같이"가 이 부부의 생존 전략입니다`);
+      if(iljuGongmang) issues.push(`배우자궁이 ${term('공망')} — 결혼 자체보다 "함께 사는 의미"를 계속 채워야 허전하지 않은 구조. 공동의 취미·목표가 약입니다`);
+      html+=ul(issues);
+    }
+    return html;
+  }
+
+  /* ================= S8. 건강운 ================= */
+  function sec8(s, x, a, ctx){
+    const excess=s.oh[s.strong]>=3?s.strong:null;
+    const pgwanS=saeunOf(x,['편관']);
+    const chungS=(x.saeunEx||[]).filter(y=>y.rel.some(r=>r.type==='충'));
+    const yukae=x.pillars.some(pp=>pp.sinsal==='육해살');
+    const EL_HABIT={목:'스트레칭·산책 등 몸을 펴고 걷는 운동, 신맛·녹색 채소',화:'수영·명상 등 열을 식히는 활동, 카페인 절제',토:'규칙적인 식사와 가벼운 소식(小食), 단맛 절제',금:'호흡 운동·건조 관리, 매운맛 절제',수:'보온과 충분한 수면, 짠맛 절제'};
+    let html=h4('타고난 체질의 약점');
+    html+=p(`가장 부족한 ${elko(s.lack)} 기운의 계통이 이 사주의 약한 고리입니다 — ${C.CONCERN_HEALTH[s.lack]}`);
+    if(excess) html+=p(`반대로 ${elko(excess)} 기운은 ${s.oh[excess]}개로 과다 — 넘치는 것도 병이 됩니다. ${EL_EXCESS_HEALTH[excess]}가 두 번째 관리 포인트입니다.`);
+    html+=why(`오행 분포 ${['목','화','토','금','수'].map(e=>`${e} ${s.oh[e]}`).join(' · ')} — 0~1개 오행은 그 계통의 저항력이 낮고, 3개 이상은 과열로 나타난다고 봅니다.`);
+    html+=h4('스트레스가 몸으로 나타나는 방식');
+    html+=p(s.body==='신강'
+      ? '기운이 강한 체질이라 아파도 밀어붙이다 한 번에 크게 꺾이는 유형입니다. "버틸 만한데?"가 이 사주의 가장 위험한 신호입니다.'
+      : s.body==='신약'
+      ? '기운이 섬세한 체질이라 스트레스가 바로 몸(소화·수면·컨디션)으로 옵니다. 몸의 신호가 빠른 만큼, 초기에 쉬면 회복도 빠릅니다.'
+      : '강약이 균형인 체질이라 큰 파도는 적지만, 그만큼 이상 신호를 무심코 넘기기 쉽습니다. 정기 검진이 보험입니다.');
+    html+=h4('건강을 조심할 시기');
+    const risks=[];
+    if(pgwanS.length) risks.push(`${pgwanS.map(fmtSaeun).join(', ')} — 편관 세운: 과로·사고수가 겹치기 쉬운 해, 이 해의 건강검진은 선택이 아니라 필수`);
+    if(chungS.length) risks.push(`${chungS.map(fmtSaeun).join(', ')} — 충이 드는 해: 생활 리듬이 흔들리며 몸이 따라 흔들리는 해`);
+    if(yukae) risks.push('원국에 육해살 — 큰 병보다 잔병·잔근심형. 꾸준한 루틴(수면·식사 시간 고정)이 최고의 약');
+    html+= risks.length?ul(risks):p('가까운 세운에 두드러진 건강 위험 신호는 없습니다. 다만 아래 습관은 체질상 평생 유효합니다.');
+    html+=h4('평생 관리 습관');
+    html+=p(`부족한 ${elko(s.lack)}을 채우는 생활 — ${EL_HABIT[s.lack]}. 사주는 병을 진단하지 않습니다. 여기 짚은 것은 "구조적으로 무리가 가기 쉬운 곳"이니, 이상 신호는 반드시 병원에서 확인하세요.`);
+    return html;
+  }
+
+  /* ================= S9. 인간관계·가족운 ================= */
+  function sec9(s, x, a, ctx){
+    const t10=ctx.t10;
+    const bi=t10.비견+t10.겁재, inn=t10.편인+t10.정인, sik=t10.식신+t10.상관, gwan=t10.편관+t10.정관, jae=t10.편재+t10.정재;
+    const gwiin=x.pillars.some(pp=>pp.gwiin);
+    let html=h4('관계의 지형도 — 십신 분포로 본 사람 운');
+    html+=ul([
+      `부모·윗사람(인성 ${inn}개) — ${inn>=2?'어른의 지원과 가르침을 받는 복이 있습니다. 받은 만큼 갚으면 인덕이 평생 갑니다':inn===1?'필요한 순간의 지원은 있으나, 기본적으로 스스로 크는 구조입니다':'윗사람 운이 옅어 조언자·멘토를 의식적으로 만들어야 합니다'}`,
+      `형제·동료(비겁 ${bi}개) — ${bi>=3?'사람은 늘 곁에 많지만 돈과 경쟁이 함께 얽힙니다. 관계와 금전의 분리가 철칙':bi>=1?'필요한 만큼의 동료 운 — 깊고 좁게 가는 것이 맞습니다':'혼자가 익숙한 구조 — 외로움이 아니라 독립성으로 읽으세요'}`,
+      `아랫사람·표현(식상 ${sik}개) — ${sik>=2?'후배·아랫사람을 잘 키우고 베푸는 기운이 강합니다':'표현이 아끼는 편이라, 마음을 말로 꺼내는 연습이 관계를 살립니다'}`,
+      `조직·사회(관성 ${gwan}개) — ${gwan>=2?'조직 안에서 신뢰를 얻는 유형':'조직보다 개인 대 개인의 관계에서 힘이 나는 유형'}`,
+      `실리 관계(재성 ${jae}개) — ${jae>=2?'폭넓은 사교와 실리적 네트워크에 강합니다':'좁아도 진심인 관계를 지향합니다'}`
+    ]);
+    html+=h4('귀인운');
+    html+=p(gwiin
+      ? '원국에 <b>천을귀인</b>이 있습니다 — 위기의 순간마다 돕는 사람이 나타나는 최고 길신입니다. 단, 귀인은 "먼저 신의를 지키는 사람"에게 옵니다.'
+      : '원국에 천을귀인은 없지만, 귀인은 만드는 것이기도 합니다. 신세를 지면 반드시 갚는 습관 하나가 이 사주의 귀인운을 대신합니다.');
+    html+=h4('관계에서 반복되는 갈등 구조');
+    html+=p(`${s.domGod} 기운이 우세한 사주입니다 — ${C.DOM_TRAIT[s.domGod]}`);
+    html+=p(`정리 — 이 사주의 사람 복은 "${gwiin?'귀인이 오는 복':'스스로 만드는 복'}"이고, 관계의 급소는 위 갈등 구조입니다. 급소를 아는 사람은 같은 싸움을 두 번 하지 않습니다.`);
+    return html;
+  }
+
+  /* ================= S10. 대운 상세 해석 ================= */
+  function sec10(s, x){
+    if(!x.daeunEx||!x.daeunEx.length) return p('대운 정보를 계산할 수 없습니다.');
+    const now=s.luck?s.luck.nowY:0;
+    let html=p(`${term('대운')} 하나하나를 분야별로 해석합니다. 각 대운의 키워드 세 개만 기억해도 그 10년의 지도가 됩니다.`);
+    x.daeunEx.forEach(d=>{
+      const cur=now>=d.startYear&&now<=d.endYear;
+      const det=C.SHISHEN_DETAIL[d.god]||{};
+      const u=UNSEONG_DESC[d.unseong]||{};
+      const dl=DOMAIN_LINE[d.god]||{};
+      const chungRel=d.rel.filter(r=>r.type==='충');
+      const kw=[C.SHISHEN_MEAN[d.god]?C.SHISHEN_MEAN[d.god].split('·')[0]:d.god, u.word, chungRel.length?'변동':(d.gwiin?'귀인':'안정')];
+      const cautions=[];
+      if(C.CAUTION.has(d.god)) cautions.push((det.period||'').split('. ').slice(-1)[0]);
+      chungRel.forEach(r=>cautions.push(`${r.txt} — 이동·재편 이슈가 표면화되기 쉬움`));
+      if(d.gongmang) cautions.push('지지 공망 — 겉 성취보다 내실을 채워야 허무하지 않은 대운');
+      html+=`<div class="rp-du${cur?' cur':''}">
+        <div class="rp-duh"><b>${d.startAge}~${d.endAge}세</b> · ${d.startYear}~${d.endYear} · ${gzko(d.gz)} <b>${d.god}</b> 대운 · 12운성 ${d.unseong}${cur?' <span class="rp-tag gd">현재</span>':''}</div>
+        <div class="rp-dukw">${kw.filter(Boolean).map(k=>chip('#'+k)).join('')}</div>
+        ${ul([
+          `💰 돈 — ${dl.돈||'-'}`,
+          `💼 직업 — ${dl.직업||'-'}`,
+          `💕 연애·결혼 — ${dl.연애||'-'}`,
+          `🩺 건강 — ${dl.건강||'-'}`,
+          `🤝 관계 — ${dl.관계||'-'}`
+        ])}
+        ${cautions.length?`<div class="rp-why">⚠️ 주의 — ${cautions.join(' / ')}</div>`:''}
+        <div class="rp-lvl">🔑 레벨업 포인트 — ${det.advice||''}</div>
+      </div>`;
+    });
+    return html;
+  }
+
+  /* ================= S11. 세운 핵심 해석 ================= */
+  function sec11(s, x){
+    if(!x.saeunEx||!x.saeunEx.length) return p('세운 정보를 계산할 수 없습니다.');
+    const now=s.luck?s.luck.nowY:0;
+    const tagOf=y=>{
+      const t=[];
+      if(GROUP.재성.includes(y.god)) t.push(chip('💰 돈','gd2'));
+      if(GROUP.관성.includes(y.god)) t.push(chip('🏛 직장·시험','gd2'));
+      if((s.input.sex==='female'?GROUP.관성:GROUP.재성).includes(y.god)) t.push(chip('💕 인연','gd2'));
+      if(GROUP.식상.includes(y.god)) t.push(chip('🎨 표현·확장','gd2'));
+      if(GROUP.인성.includes(y.god)) t.push(chip('📜 문서·공부','gd2'));
+      if(y.rel.some(r=>r.type==='충')||y.sinsal==='역마살') t.push(chip('🚚 이동·변동','wr2'));
+      if(y.god==='편관'||y.god==='겁재') t.push(chip('⚠️ 관리 필요','wr2'));
+      if(y.gwiin) t.push(chip('🙏 귀인','gd2'));
+      return t.join('');
+    };
+    let html=p(`${term('세운')}은 그 해의 날씨입니다. 아래 태그가 붙은 해는 해당 분야의 사건이 실제로 "형태를 갖춰" 나타나기 쉬운 해입니다.`);
+    x.saeunEx.forEach(y=>{
+      const det=C.SHISHEN_DETAIL[y.god]||{};
+      const first=(det.period||'').split('. ')[0]+'.';
+      const chungTxt=y.rel.filter(r=>r.type==='충').map(r=>r.txt).join(', ');
+      html+=`<div class="rp-yr${y.year===now?' cur':''}">
+        <div class="rp-yrh"><b>${y.year}년</b> ${gzko(y.gz)} · <b>${y.god}</b>${y.year===now?' <span class="rp-tag gd">올해</span>':''} <span class="rp-yrtags">${tagOf(y)}</span></div>
+        <div class="rp-yrb">${first}${chungTxt?` <b>${chungTxt}</b> — 이 해는 자리(집·직장·관계)가 움직이기 쉬운 해입니다.`:''}${y.sinsal==='도화살'?' 도화가 드는 해 — 이성의 관심·인기운이 함께 옵니다.':''}</div>
+      </div>`;
+    });
+    html+=note('연도별 판단 근거: 그 해 천간의 십성(일간 대비) + 지지와 원국의 충·합 + 신살. 같은 해라도 대운의 큰 계절 안에서 읽어야 정확합니다(10단계 참조).');
+    return html;
+  }
+
+  /* ================= S12. 현실 조언 및 총평 ================= */
+  function sec12(s, x, a, ctx){
+    const t10=ctx.t10;
+    const g=C.ILGAN[s.dayGan];
+    const mt=moneyType(s,t10), ct=careerType(s,t10);
+    const gd=x.gyeok?GYEOK_DESC[x.gyeok.name]:null;
+    // 고칠 것 3 — 기신·약점·과다 플래그에서 우선순위 채택
+    const fixes=[];
+    if(x.yong) fixes.push(`${term('기신')}인 ${elko(x.yong.gi)} 기운에 해당하는 환경·습관(${C.EL_DESC[x.yong.gi]}의 과잉)을 줄이는 것 — 사주의 브레이크부터 풀어야 액셀이 듣습니다`);
+    if(t10.비견+t10.겁재>=3) fixes.push('가까운 사람과의 돈 거래 습관 — 이 사주 손재의 8할은 "아는 사람"에게서 나옵니다');
+    if(t10.편인+t10.정인>=3) fixes.push('생각만 하다 놓치는 습관 — 완벽한 계획보다 어설픈 시작이 이깁니다');
+    if(t10.식신+t10.상관>=3) fixes.push('벌여놓고 마무리 못 하는 습관 — 끝낸 일의 개수가 이 사주의 실력입니다');
+    fixes.push(`약점으로 짚인 "${(g.weakness||'').split('.')[0]}" — 성격이 아니라 구조이니, 보완 장치(사람·시스템)를 곁에 두면 됩니다`);
+    // 강점 3
+    const strengths=[
+      `${g.nick} 일간의 "${(g.strength||'').split('.')[0]}"`,
+      gd?`${x.gyeok.name}의 그릇 — ${gd.easy}`:null,
+      x.pillars.some(pp=>pp.gwiin)?'천을귀인 — 위기마다 사람이 돕는 복':`${elko(s.strong)} 기운(${C.EL_DESC[s.strong]})의 엔진`
+    ].filter(Boolean);
+    const cn=a&&a.concern?C.describe.concern(s,a.concern):null;
+    let html=h4('가장 먼저 고쳐야 할 것 3가지');
+    html+=ul(fixes.slice(0,3));
+    html+=h4('반드시 붙잡아야 할 강점 3가지');
+    html+=ul(strengths.slice(0,3));
+    html+=h4('분야별 생존 전략 한 줄');
+    html+=ul([
+      `💰 돈 — ${MONEY_TYPE[mt].strategy}`,
+      `💼 일 — ${CAREER_TYPE[ct].tip}`,
+      `💕 인연 — ${x.yong?`${elko(x.yong.yong)} 기운의 사람을 곁에, ${elko(x.yong.gi)} 기운의 소모전은 피하기`:'균형을 잡아주는 사람을 곁에 두기'}`,
+      `🩺 건강 — 부족한 ${elko(s.lack)} 계통(${C.CONCERN_HEALTH[s.lack].split('.')[0]})을 평생 관리 항목으로`
+    ]);
+    if(cn) html+=`<div class="rp-concern"><div class="rp-h4">${cn.title} — 신청자가 고른 고민</div>${p(cn.body)}</div>`;
+    html+=h4('총평 — 이 사주 인생의 본질');
+    html+=p(`${a&&a.name?a.name+'님':'이 사주'}는 <b>${g.nick}</b>의 본질 위에 <b>${s.body}</b>의 힘, ${x.gyeok?`<b>${x.gyeok.name}</b>의 그릇`:'균형의 그릇'}을 얹은 명(命)입니다. ${gd?gd.theme+'.':''} 부족한 ${elko(s.lack)}과 ${term('용신')} ${x.yong?elko(x.yong.yong):''}을 챙기는 것이 평생의 개운법이며, 위 대운의 계절만 알고 걸어도 남들보다 반 박자 빠르게 준비할 수 있습니다. 운은 정해진 결말이 아니라 "미리 받아보는 일기예보"입니다 — 우산을 챙기는 것은 본인의 몫이고, 그 우산이 무엇인지는 이 리포트가 이미 말해주었습니다.`);
+    html+=note('본 리포트는 만세력 기반 규칙 엔진의 자동 분석으로, 격국·용신은 간이 판정입니다. 재미와 참고를 위한 자료이며 의학·법률·투자 판단의 근거가 될 수 없습니다.');
+    return html;
+  }
+
   /* ================= 오행 인쇄 팔레트 (흰 배경 보정) ================= */
   const ELP={
     목:{fg:'#2e7d4f', bg:'#e8f3ec'},
@@ -316,16 +622,16 @@
   const SECS=[
     {id:'s1', icon:'📜', title:'1. 만세력 판독 요약', fn:sec1},
     {id:'s2', icon:'🧬', title:'2. 원국 핵심 구조', fn:sec2},
-    {id:'s3', icon:'🌊', title:'3. 평생 총운 — 시기별 큰 흐름', fn:null},
-    {id:'s4', icon:'💰', title:'4. 금전운', fn:null},
-    {id:'s5', icon:'💼', title:'5. 직업운', fn:null},
-    {id:'s6', icon:'💕', title:'6. 연애운', fn:null},
-    {id:'s7', icon:'💍', title:'7. 결혼운', fn:null},
-    {id:'s8', icon:'🩺', title:'8. 건강운', fn:null},
-    {id:'s9', icon:'🤝', title:'9. 인간관계·가족운', fn:null},
-    {id:'s10', icon:'🧭', title:'10. 대운 상세 해석', fn:null},
-    {id:'s11', icon:'📈', title:'11. 세운 핵심 해석', fn:null},
-    {id:'s12', icon:'🎯', title:'12. 현실 조언 및 총평', fn:null}
+    {id:'s3', icon:'🌊', title:'3. 평생 총운 — 시기별 큰 흐름', fn:sec3},
+    {id:'s4', icon:'💰', title:'4. 금전운', fn:sec4},
+    {id:'s5', icon:'💼', title:'5. 직업운', fn:sec5},
+    {id:'s6', icon:'💕', title:'6. 연애운', fn:sec6},
+    {id:'s7', icon:'💍', title:'7. 결혼운', fn:sec7},
+    {id:'s8', icon:'🩺', title:'8. 건강운', fn:sec8},
+    {id:'s9', icon:'🤝', title:'9. 인간관계·가족운', fn:sec9},
+    {id:'s10', icon:'🧭', title:'10. 대운 상세 해석', fn:sec10},
+    {id:'s11', icon:'📈', title:'11. 세운 핵심 해석', fn:sec11},
+    {id:'s12', icon:'🎯', title:'12. 현실 조언 및 총평', fn:sec12}
   ];
   function buildAll(s, x, a){
     TERMS=new Set();
