@@ -643,7 +643,120 @@
     }));
   }
 
-  function customerSheetHTML(s, x, a){ return ''; } // 5단계에서 구현
+  /* ================= 고객용 A4 명식표 (그림 위주 결과지) ================= */
+  function customerSheetHTML(s, x, a){
+    if(!s||!x) return '';
+    const labs=['시','일','월','년'];
+    const cols=labs.map(l=>x.pillars.find(pp=>pp.lab===l));
+    const cal=a.calendar==='lunar'?('음력'+(a.leap?'·윤달':'')):'양력';
+    const hourTxt=(a.hour===null||a.hour===undefined||a.hour==='')?'시간 모름':a.hour+'시경';
+    const g=C.ILGAN[s.dayGan];
+    const metal=el=>el==='금'?'box-shadow:inset 0 0 0 1px #c9cfd8;':'';
+
+    /* 명식 그리드 */
+    const colHtml=cols.map(c=>{
+      if(!c.gan) return `<div class="cs-col"><div class="cs-collab">${c.lab}주</div>
+        <div class="cs-ss">－</div><div class="cs-tile cs-empty">－</div><div class="cs-tile cs-empty">－</div>
+        <div class="cs-ss">－</div><div class="cs-sub">－</div><div class="cs-sub">－</div><div class="cs-sub">－</div></div>`;
+      const ge=C.GAN_EL[c.gan], ze=C.ZHI_EL[c.zhi];
+      const sal=[c.gwiin?'귀인':'', c.gongmang?'공망':'', c.sinsal||''].filter(Boolean).join('·')||'－';
+      return `<div class="cs-col">
+        <div class="cs-collab">${c.lab}주</div>
+        <div class="cs-ss">${c.lab==='일'?'<b>나</b>':c.ssGan}</div>
+        <div class="cs-tile" style="background:${ELP[ge].bg};color:${ELP[ge].fg};${metal(ge)}"><b>${c.gan}</b><span>${C.GAN_KO[c.gan]} · ${C.EL_HAN[ge]}</span></div>
+        <div class="cs-tile" style="background:${ELP[ze].bg};color:${ELP[ze].fg};${metal(ze)}"><b>${c.zhi}</b><span>${C.ZHI_KO[c.zhi]} · ${C.EL_HAN[ze]}</span></div>
+        <div class="cs-ss">${c.ssZhi}</div>
+        <div class="cs-sub">${c.hide.map(hd=>hd.g).join(' · ')}</div>
+        <div class="cs-sub"><b>${c.unseong||'－'}</b></div>
+        <div class="cs-sub cs-sal">${sal}</div>
+      </div>`;
+    }).join('');
+    const rowLabs=`<div class="cs-col cs-labels">
+      <div class="cs-collab">&nbsp;</div><div class="cs-ss">십성</div>
+      <div class="cs-tile cs-lab2">천간</div><div class="cs-tile cs-lab2">지지</div>
+      <div class="cs-ss">십성</div><div class="cs-sub">지장간</div><div class="cs-sub">12운성</div><div class="cs-sub">신살</div></div>`;
+
+    /* 오행 밸런스 바 */
+    const maxOh=Math.max.apply(null, Object.values(s.oh).concat([1]));
+    const ohBars=['목','화','토','금','수'].map(e=>`
+      <div class="cs-ohr"><span class="cs-ohd" style="background:${ELP[e].fg}">${C.EL_HAN[e]}</span>
+      <span class="cs-oht"><i style="width:${Math.max(s.oh[e]/maxOh*100,3)}%;background:${ELP[e].fg}"></i></span>
+      <span class="cs-ohc">${s.oh[e]}</span></div>`).join('');
+
+    /* 신강약 게이지 */
+    const de=s.dayEl, support=s.oh[de]+s.oh[C.REV_SHENG[de]];
+    const pct=Math.round(support/s.total*100);
+    const gaugePos=Math.min(Math.max(pct,4),96);
+
+    /* 용신·개운 */
+    const yong=x.yong, rec=yong?C.REC[yong.yong]:null;
+
+    /* 귀인·신살 칩 */
+    const salChips=[];
+    if(x.pillars.some(pp=>pp.gwiin)) salChips.push({t:'천을귀인',c:'gd'});
+    if(x.pillars.some(pp=>pp.gongmang)) salChips.push({t:'공망',c:'wr'});
+    ['도화살','역마살','화개살','장성살','반안살'].forEach(sl=>{ if(x.pillars.some(pp=>pp.sinsal===sl)) salChips.push({t:sl,c:''}); });
+    const salHtml=salChips.length?salChips.map(cch=>`<span class="cs-chip ${cch.c}">${cch.t}</span>`).join(''):'<span class="cs-chip">두드러진 신살 없음</span>';
+
+    /* 대운 타임라인 SVG */
+    const du=x.daeunEx||[]; let timeline='';
+    if(du.length>=2){
+      const W=700, H=74, x0=26, x1=W-26, n=du.length;
+      const step=(x1-x0)/(n-1);
+      const nowY=s.luck?s.luck.nowY:0;
+      let ticks='';
+      du.forEach((d,i)=>{ const tx=x0+step*i;
+        ticks+=`<line x1="${tx}" y1="34" x2="${tx}" y2="44" stroke="#b8a15e" stroke-width="1.4"/>
+        <text x="${tx}" y="28" text-anchor="middle" font-size="11" fill="#8a7d5a">${d.startAge}세</text>
+        <text x="${tx}" y="60" text-anchor="middle" font-size="13" font-weight="700" fill="#4a4234" font-family="'Noto Serif KR',serif">${d.gz}</text>`; });
+      const curIdx=du.findIndex(d=>nowY>=d.startYear&&nowY<=d.endYear);
+      let marker='';
+      if(curIdx>=0){ const frac=Math.min(Math.max((nowY-du[curIdx].startYear)/10,0),1);
+        const mx=x0+step*(curIdx+frac*(curIdx<n-1?1:0));
+        marker=`<path d="M ${mx} 40 l -5 -8 l 10 0 z" fill="#b8862f"/><text x="${mx}" y="72" text-anchor="middle" font-size="10" font-weight="700" fill="#b8862f">현재</text>`; }
+      timeline=`<svg viewBox="0 0 ${W} ${H}" class="cs-tl" xmlns="http://www.w3.org/2000/svg">
+        <line x1="${x0}" y1="39" x2="${x1}" y2="39" stroke="#d9c996" stroke-width="2.5" stroke-linecap="round"/>
+        ${ticks}${marker}</svg>`;
+    }
+
+    return `<button class="cs-close" onclick="previewCustomer()">✕ 미리보기 닫기</button>
+    <div class="cs-page">
+      <div class="cs-head"><div class="cs-brand">사주 오행 공방</div><div class="cs-title">나의 사주 명식(命式) 결과지</div></div>
+      <div class="cs-who"><b>${a.name||'-'}</b> · ${a.sex==='female'?'여성':'남성'} · ${cal} ${a.y}.${a.mo}.${a.d} · ${hourTxt}<span class="cs-solar">양력 ${s.solarStr||'-'}</span></div>
+      <div class="cs-grid">${rowLabs}${colHtml}</div>
+      <div class="cs-mid">
+        <div class="cs-box">
+          <div class="cs-boxh">🌳 오행 밸런스</div>${ohBars}
+          <div class="cs-lackline">부족한 기운 <b style="color:${ELP[s.lack].fg}">${C.EL_HAN[s.lack]}(${s.lack})</b> — ${C.EL_DESC[s.lack]}</div>
+        </div>
+        <div class="cs-box cs-ilgan">
+          <div class="cs-boxh">📿 나의 일간</div>
+          <div class="cs-ilchar" style="color:${ELP[de].fg}">${s.dayGan}</div>
+          <div class="cs-ilnick">${g.nick}</div>
+          <div class="cs-iless">${(g.essence||'').split('.')[0]}.</div>
+        </div>
+      </div>
+      <div class="cs-row3">
+        <div class="cs-box">
+          <div class="cs-boxh">⚖️ 기운의 강약 <b class="cs-bodytag">${s.body}</b></div>
+          <div class="cs-gauge"><i style="left:${gaugePos}%"></i><em style="left:28%"></em><em style="left:45%"></em></div>
+          <div class="cs-gaugelab"><span>신약</span><span>중화</span><span>신강</span></div>
+        </div>
+        <div class="cs-box">
+          <div class="cs-boxh">🔑 용신과 개운</div>
+          ${yong?`<div class="cs-yline">용신 <b style="color:${ELP[yong.yong].fg}">${C.EL_HAN[yong.yong]}(${yong.yong})</b> · 희신 ${C.EL_HAN[yong.hee]}(${yong.hee})</div>`:''}
+          ${rec?`<div class="cs-yline">색 <b>${rec.color}</b> · 원석 <b>${rec.stone}</b> · 방위 <b>${rec.dir}</b></div>`:''}
+          ${x.gyeok?`<div class="cs-yline">격국 <b>${x.gyeok.name}</b></div>`:''}
+        </div>
+        <div class="cs-box">
+          <div class="cs-boxh">✨ 귀인 · 신살</div>
+          <div class="cs-salwrap">${salHtml}</div>
+        </div>
+      </div>
+      ${timeline?`<div class="cs-daeun"><div class="cs-boxh">🧭 나의 대운(大運) — 10년 주기 인생의 계절</div>${timeline}</div>`:''}
+      <div class="cs-foot"><b>@susu.oheng</b><span> · 무료사주 3초 조회 ✨</span><em>본 결과지는 상담 참고용입니다 · 사주 오행 공방</em></div>
+    </div>`;
+  }
 
   global.SAJU_REPORT={ buildAll, customerSheetHTML, count10, moneyType, careerType,
     UNSEONG_DESC, GYEOK_DESC, MONEY_TYPE, CAREER_TYPE, SPOUSE_GONG, DOMAIN_LINE, SINSAL_DESC, REL_DESC, EL_EXCESS_HEALTH, ELP,
