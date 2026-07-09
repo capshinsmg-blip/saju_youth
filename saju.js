@@ -183,7 +183,8 @@
       luck={ daeun, saeun, wolun, nowY, startInfo: (yun.getStartYear?yun.getStartYear():null) };
     } catch(e){ luck=null; }
 
-    return {error:null, input:inp, pillars, dayGan, dayZhi, dayEl, oh, tg, total, money, love, lack, strong, hourKnown, solarStr, body, domGod, luck};
+    return {error:null, input:inp, pillars, dayGan, dayZhi, dayEl, oh, tg, total, money, love, lack, strong, hourKnown, solarStr, body, domGod, luck,
+      _raw:{ lunar:lunarObj, ec }}; // 확장 계산(saju-ext.js)용 원본 객체 — 직렬화 금지
   }
 
   function grade(v){ return v>=80?'매우 좋음':v>=65?'좋음':v>=50?'보통':'보완 필요'; }
@@ -339,6 +340,10 @@
   global.SAJU={
     GAN_KO,ZHI_KO,GAN_EL,ZHI_EL,EL_HAN,EL_COLOR,EL_DESC,ILGAN,PILLAR_MEAN,REC,TENGOD_MEAN,SHISHEN_MEAN,
     compute, grade, ten10,
+    // 확장 레이어(saju-ext/report)에서 재사용하는 내부 사전·함수
+    YY, ZHI_MAIN, SHENG, KE, REV_SHENG, CHUNG, GOOD, CAUTION,
+    SHISHEN_SHORT, SHISHEN_DETAIL, DOM_TRAIT, BODY_TRAIT, CONCERN_HEALTH,
+    ten5, toneOf,
     describe:{ money, love, ilgan, balance, personality, daeunList, saeunList, wolunList, cautions, curDaeun, concern, pillarsDetail }
   };
 })(typeof window!=='undefined'?window:globalThis);
