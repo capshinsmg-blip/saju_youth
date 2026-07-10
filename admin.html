@@ -292,6 +292,7 @@
   .cs-foot em{display:block;font-style:normal;font-size:9px;color:#9a917f;margin-top:1mm;}
 
   /* ===== 인쇄 (풀이 결과지만 출력) ===== */
+  @page{size:A4;margin:10mm;} /* 여백 고정 — 브라우저 기본여백(12.7mm)에서 명식표 하단이 잘리는 문제 방지 */
   @media print{
     *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
     body{background:#fff;}
@@ -300,13 +301,20 @@
     .detail{width:100%;}
     .card{break-inside:avoid;box-shadow:none;}
     .report-sec{break-inside:auto;} /* 긴 섹션은 페이지 분할 허용 */
-    .report-sec h3,.rp-h4{break-after:avoid;}
-    .rp-ms tr,.rp-ul li,.rp-why{break-inside:avoid;}
+    .report-sec h3,.rp-h4,.cardguide{break-after:avoid;break-inside:avoid;}
+    /* 블록 요소는 페이지 경계에서 통째로 다음 장으로 — 중간 잘림 방지 */
+    .rp-p,.rp-why,.rp-note,.rp-ul li,.rp-du,.rp-yr,.rp-lvl,.rp-concern,.rp-scorebar,
+    .rp-ohrow,.rp-dstripwrap,.rp-scroll,.rp-ms,.rp-ms tr,
+    .pdetail .ei,.plist .prow,.months .mcell,.cautionbox,.pillars,.score,.kv
+    {break-inside:avoid;page-break-inside:avoid;}
+    p,li{orphans:3;widows:3;}
+    .rp-scroll{overflow:visible;} /* 인쇄에서 스크롤 컨테이너가 표를 자르지 않도록 */
+    .rp-ms{min-width:0;}
     .consult textarea{border:1px solid #ccc;resize:none;}
     /* 고객용 결과지 모드: 명식표만 출력 */
     body.print-customer #dash{display:none !important;}
     body.print-customer #custSheet{display:block !important;position:static;background:none;padding:0;}
-    body.print-customer #custSheet .cs-page{box-shadow:none;margin:0;}
+    body.print-customer #custSheet .cs-page{box-shadow:none;margin:0;width:190mm;height:275mm;}
   }
 </style>
 </head>
